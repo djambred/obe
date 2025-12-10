@@ -1,0 +1,204 @@
+# MinIO Setup Summary
+
+## Files Created/Modified
+
+### Scripts
+- ✅ `setup-minio.sh` - Automated setup script (executable)
+
+### Configuration
+- ✅ `.env` - Updated with MINIO config
+- ✅ `.env.example` - Added MINIO variables template
+- ✅ `nginx/default.conf` - Already has /s3/ proxy location
+- ✅ `nginx/minio.conf` - Reference config for standalone MinIO
+
+### Laravel Console Commands
+- ✅ `app/Console/Commands/MinioSetup.php` - Create bucket & directories
+- ✅ `app/Console/Commands/MinioPublic.php` - Set bucket public
+
+### Laravel Middleware
+- ✅ `app/Http/Middleware/SecurityHeaders.php` - Security headers + CSP
+- ✅ `app/Http/Middleware/ForceHttpsUrls.php` - Auto-convert URLs to HTTPS
+
+### Laravel Service Providers
+- ✅ `app/Providers/AppServiceProvider.php` - URL generation for presigned URLs
+
+### Documentation
+- ✅ `MINIO_QUICKSTART.md` - Quick start guide
+- ✅ `MINIO_PRODUCTION.md` - Production setup guide
+
+---
+
+## How to Use
+
+### Quick Start (1 command):
+```bash
+./setup-minio.sh
+```
+
+This will:
+1. Check Docker is running
+2. Clear config cache
+3. Create MinIO bucket
+4. Create directories
+5. Set bucket to public read
+6. Test access
+7. Display configuration
+
+### Result:
+- MinIO bucket ready for file uploads
+- Nginx proxy configured for /s3/ path
+- URLs auto-convert to HTTPS in production
+- Security headers configured
+- CSP policy allows blob: for image preview
+
+---
+
+## Architecture
+
+### Local Development
+```
+Browser (http://localhost)
+    ↓
+Filament Admin (FileUpload)
+    ↓
+Laravel (FILESYSTEM_DISK=minio)
+    ↓
+MinIO (http://minio:9000)
+```
+
+### Production
+```
+Browser (https://yourdomain.com)
+    ↓
+Filament Admin (FileUpload)
+    ↓
+Laravel (FILESYSTEM_DISK=minio)
+    ↓
+MinIO (http://minio:9000) [internal]
+    ↓
+When accessing file:
+Browser: https://yourdomain.com/s3/obe/file.jpg
+    ↓ (Nginx proxy /s3/)
+MinIO (http://minio:9000)
+```
+
+---
+
+## Key Features
+
+✅ **Automatic Setup** - Single script to setup everything
+✅ **Bucket Management** - Create, configure, and test bucket
+✅ **Public Access** - Bucket set to public read (no auth needed for GET)
+✅ **HTTPS Support** - Auto-converts HTTP URLs to HTTPS in production
+✅ **Security Headers** - CSP, X-Frame-Options, X-Content-Type-Options
+✅ **Nginx Proxy** - /s3/ path routes to MinIO with proper headers
+✅ **Presigned URLs** - Auto-conversion for file uploads/downloads
+✅ **Production Ready** - Works with any HTTPS domain
+
+---
+
+## Configuration
+
+### Environment Variables
+```env
+FILESYSTEM_DISK=minio
+
+# MinIO credentials
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+
+# MinIO connection
+MINIO_REGION=us-east-1
+MINIO_BUCKET=obe
+MINIO_ENDPOINT=http://minio:9000
+
+# Public URL
+MINIO_URL=http://localhost:9000/obe              # Local
+MINIO_URL=https://yourdomain.com/s3/obe          # Production
+```
+
+### Nginx Locations
+- `/s3/` - MinIO API proxy (handles files)
+- `/minio-console/` - MinIO admin panel (optional)
+
+---
+
+## Testing
+
+### Upload file via Filament
+1. Go to Admin → Universities (atau Faculties/Study Programs)
+2. Edit any record
+3. Upload logo image
+4. Click save
+
+File akan tersimpan di MinIO dan accessible via URL.
+
+### Manual test
+```bash
+docker compose exec php php artisan tinker
+
+# Test S3 connection
+> Storage::disk('minio')->exists('test.txt')
+> Storage::disk('minio')->put('test.txt', 'hello')
+> Storage::disk('minio')->url('test.txt')
+> Storage::disk('minio')->delete('test.txt')
+```
+
+### Browser access
+- MinIO Console: http://localhost:9001 (local)
+- MinIO API: http://localhost:9000/obe (local)
+- Production: https://yourdomain.com/s3/obe
+
+---
+
+## Troubleshooting
+
+### Run setup again
+```bash
+./setup-minio.sh
+```
+
+### Reset MinIO completely
+```bash
+docker compose down -v minio
+rm -rf ./minio/data
+docker compose up -d minio
+./setup-minio.sh
+```
+
+### Check bucket status
+```bash
+docker compose exec php curl http://minio:9000/obe
+```
+
+### View logs
+```bash
+docker compose logs minio
+docker compose logs php
+docker compose logs nginx
+```
+
+---
+
+## Production Checklist
+
+- [ ] Run `./setup-minio.sh`
+- [ ] Update `.env` with production domain
+  - [ ] `MINIO_URL=https://yourdomain.com/s3/obe`
+  - [ ] `MINIO_ENDPOINT=http://minio:9000`
+- [ ] Verify Nginx `/s3/` proxy configuration
+- [ ] Test file upload & access
+- [ ] Change MinIO default credentials (optional)
+- [ ] Setup MinIO backup strategy
+- [ ] Monitor disk usage
+- [ ] Update MINIO_SECRET_KEY to strong password
+
+---
+
+## Next Steps
+
+- 🔐 Setup S3-compatible backup (AWS S3, DigitalOcean Spaces, etc)
+- 📊 Configure MinIO metrics and monitoring
+- ⚡ Add CDN in front of /s3/ location
+- 🔄 Setup cross-region replication
+- 📝 Document backup/restore procedures
