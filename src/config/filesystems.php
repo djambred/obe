@@ -69,6 +69,7 @@ return [
             'endpoint' => env('MINIO_ENDPOINT', 'http://minio:9000'),
             'use_path_style_endpoint' => true,
             'url' => env('MINIO_URL', 'http://localhost:9000/obe'),
+            'visibility' => 'public', // Default visibility for Livewire uploads
             'throw' => false,
             'report' => false,
         ],
