@@ -41,6 +41,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->maxContentWidth(MaxWidth::SevenExtraLarge)
             ->sidebarCollapsibleOnDesktop()
+            ->renderHook(
+                'panels::body.end',
+                fn (): string => view('filament.admin.pages.custom-script')->render()
+            )
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
             ->pages([
@@ -53,7 +57,33 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()
-                    ->label('Administration'),
+                    ->label('Administration')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('🏛️ Institusi')
+                    ->icon('heroicon-o-building-library')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('Academic Management')
+                    ->icon('heroicon-o-academic-cap')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('👥 SDM')
+                    ->icon('heroicon-o-users')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('📚 Kurikulum')
+                    ->icon('heroicon-o-book-open')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('📝 RPS')
+                    ->icon('heroicon-o-document-text')
+                    ->collapsed(),
+                NavigationGroup::make()
+                    ->label('🎯 Learning Outcomes')
+                    ->icon('heroicon-o-light-bulb')
+                    ->collapsed(),
             ])
             ->userMenuItems([
                 'profile' => MenuItem::make()

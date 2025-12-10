@@ -21,3 +21,22 @@ Livewire::setScriptRoute(function ($handle) {
 Route::get('/', function () {
     return view('welcome');
 });
+
+// RPS PDF Preview (inline)
+Route::get('/rps/{rps}/preview-pdf', [\App\Http\Controllers\RpsController::class, 'previewPdf'])
+    ->name('rps.preview-pdf')
+    ->middleware(['auth']);
+
+// RPS PDF Preview (inline)
+Route::get('/rps/{rps}/preview-pdf', [\App\Http\Controllers\RpsController::class, 'previewPdf'])
+    ->name('rps.preview-pdf')
+    ->middleware(['auth']);
+
+// RPS PDF Download
+Route::get('/rps/{rps}/download-pdf', [\App\Http\Controllers\RpsController::class, 'downloadPdf'])
+    ->name('rps.download-pdf')
+    ->middleware(['auth']);
+
+// RPS Public Verification (No Auth Required)
+Route::get('/verify/rps/{rps}', [\App\Http\Controllers\RpsController::class, 'verifyRps'])
+    ->name('rps.verify');

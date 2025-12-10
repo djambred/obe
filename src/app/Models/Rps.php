@@ -15,8 +15,12 @@ class Rps extends Model
     protected $table = 'rps';
 
     protected $fillable = [
+        'faculty_id',
+        'study_program_id',
         'course_id',
         'lecturer_id',
+        'coordinator_id',
+        'head_of_program_id',
         'curriculum_id',
         'academic_year',
         'semester',
@@ -24,8 +28,11 @@ class Rps extends Model
         'class_code',
         'student_quota',
         'course_description',
+        'learning_materials',
+        'prerequisites',
         'clo_list',
         'plo_mapped',
+        'performance_indicators',
         'study_field_mapped',
         'weekly_plan',
         'assessment_plan',
@@ -62,6 +69,54 @@ class Rps extends Model
         'is_active' => 'boolean',
     ];
 
+    // Accessor untuk mengkonversi array repeater menjadi format yang benar
+    public function setCloListAttribute($value)
+    {
+        if (is_array($value)) {
+            // Jika dari repeater simple, extract value saja
+            $this->attributes['clo_list'] = json_encode(array_values(array_filter($value)));
+        } else {
+            $this->attributes['clo_list'] = $value;
+        }
+    }
+
+    public function setPloMappedAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['plo_mapped'] = json_encode(array_values(array_filter($value)));
+        } else {
+            $this->attributes['plo_mapped'] = $value;
+        }
+    }
+
+    public function setMainReferencesAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['main_references'] = json_encode(array_values(array_filter($value)));
+        } else {
+            $this->attributes['main_references'] = $value;
+        }
+    }
+
+    public function setSupportingReferencesAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['supporting_references'] = json_encode(array_values(array_filter($value)));
+        } else {
+            $this->attributes['supporting_references'] = $value;
+        }
+    }
+
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
+    public function studyProgram(): BelongsTo
+    {
+        return $this->belongsTo(StudyProgram::class);
+    }
+
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
@@ -80,6 +135,16 @@ class Rps extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function coordinator(): BelongsTo
+    {
+        return $this->belongsTo(Lecturer::class, 'coordinator_id');
+    }
+
+    public function headOfProgram(): BelongsTo
+    {
+        return $this->belongsTo(Lecturer::class, 'head_of_program_id');
     }
 
     public function approver(): BelongsTo

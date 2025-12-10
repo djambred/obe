@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPS - {{ $rps->course->name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 9pt;
+            line-height: 1.3;
+            color: #000;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+            letter-spacing: 0.5px;
+        }
+
+        .header h2 {
+            font-size: 10pt;
+            font-weight: bold;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        .header h3 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 8px 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            font-size: 9pt;
+            margin: 1px 0;
+        }        .section {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            background-color: #000;
+            color: white;
+            padding: 5px 10px;
+            font-size: 11pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 9pt;
+        }
+
+        .info-table td {
+            padding: 4px 8px;
+            border: 1px solid #000;
+            vertical-align: top;
+        }
+
+        .info-table td:first-child {
+            width: 35%;
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+
+        .weekly-plan-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7pt;
+            margin-bottom: 8px;
+            table-layout: fixed;
+        }
+
+        .weekly-plan-table th {
+            background-color: #d0d0d0;
+            color: #000;
+            padding: 3px 2px;
+            text-align: center;
+            border: 1px solid #000;
+            font-weight: bold;
+            font-size: 7pt;
+            line-height: 1.2;
+        }
+
+        .weekly-plan-table td {
+            padding: 3px 4px;
+            border: 1px solid #000;
+            vertical-align: top;
+            line-height: 1.2;
+        }
+
+        .weekly-plan-table tbody tr:nth-child(odd) {
+            background-color: #fff;
+        }
+
+        .weekly-plan-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .assessment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 9pt;
+        }
+
+        .assessment-table th {
+            background-color: #333;
+            color: white;
+            padding: 5px 4px;
+            text-align: center;
+            border: 1px solid #000;
+            font-weight: bold;
+        }
+
+        .assessment-table td {
+            padding: 4px 6px;
+            border: 1px solid #000;
+            vertical-align: top;
+        }
+
+        .reference-list {
+            list-style-position: inside;
+            padding-left: 0;
+            font-size: 9pt;
+        }
+
+        .reference-list li {
+            margin-bottom: 5px;
+            text-align: justify;
+            line-height: 1.3;
+        }
+
+        .cpmk-list, .cpl-list {
+            display: inline-block;
+            background-color: #f0f0f0;
+            padding: 3px 6px;
+            margin: 2px;
+            font-size: 8pt;
+            font-weight: bold;
+            border: 1px solid #000;
+        }
+
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #000;
+            font-size: 8pt;
+            text-align: center;
+            color: #000;
+        }
+
+        .signature-section {
+            margin-top: 20px;
+            display: table;
+            width: 100%;
+            font-size: 9pt;
+        }
+
+        .signature-box {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .signature-box p {
+            margin-bottom: 50px;
+            font-weight: bold;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            border-top: 1px solid #000;
+            display: inline-block;
+            padding-top: 4px;
+            min-width: 200px;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 15mm 10mm 15mm 10mm;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        @if($logoPath && file_exists($logoPath))
+        <div style="text-align: center; margin-bottom: 8px;">
+            <img src="{{ $logoPath }}" alt="{{ $university->name ?? 'University Logo' }}" style="max-height: 60px; max-width: 120px;">
+        </div>
+        @endif
+        <h1>{{ strtoupper($university->name ?? 'MNC UNIVERSITY') }}</h1>
+        <h2>{{ strtoupper($rps->faculty->name ?? ($rps->course->studyProgram->faculty->name ?? 'FAKULTAS')) }}</h2>
+        <h2>PROGRAM STUDI {{ strtoupper($rps->studyProgram->name ?? ($rps->course->studyProgram->name ?? '')) }}</h2>
+        <h3>RENCANA PEMBELAJARAN SEMESTER</h3>
+        @if($university && ($university->address || $university->website))
+        <p style="font-size: 8pt; margin-top: 4px;">
+            @if($university->address){{ $university->address }}@endif
+            @if($university->address && $university->website) | @endif
+            @if($university->website){{ $university->website }}@endif
+        </p>
+        @endif
+    </div>
+
+    <!-- Tabel Identitas MK -->
+    <table class="info-table" style="margin-bottom: 8px;">
+        <tr>
+            <td style="width: 28%;">Mata Kuliah (MK)</td>
+            <td style="width: 35%;">{{ $rps->course->name }}</td>
+            <td style="width: 12%;">Kode</td>
+            <td style="width: 25%;">{{ $rps->course->code }}</td>
+        </tr>
+        <tr>
+            <td>Rumpun MK</td>
+            <td>{{ $rps->course->course_group ?? '-' }}</td>
+            <td rowspan="2">Bobot (SKS)</td>
+            <td rowspan="2">T={{ $rps->course->theory_credits }} P={{ $rps->course->practice_credits }}</td>
+        </tr>
+        <tr>
+            <td>Pengembang RPS</td>
+            <td>{{ $rps->lecturer->name }}</td>
+        </tr>
+        <tr>
+            <td>Koordinator RPS</td>
+            <td>{{ $rps->lecturer->name }}</td>
+            <td>Semester</td>
+            <td>{{ $rps->semester }}</td>
+        </tr>
+        <tr>
+            <td>Ketua Prodi</td>
+            <td>{{ $rps->approved_by ?? '-' }}</td>
+            <td>Tgl Penyusunan</td>
+            <td>{{ $rps->created_at?->format('d F Y') ?? now()->format('d F Y') }}</td>
+        </tr>
+    </table>
+
+    <!-- Otorisasi -->
+    <table class="info-table" style="margin-bottom: 10px;">
+        <tr>
+            <td style="width: 28%; font-weight: bold;">Otorisasi</td>
+            <td>Pengembang RPS</td>
+            <td>Koordinator RPS</td>
+            <td>Ketua Prodi</td>
+        </tr>
+        <tr style="height: 40px;">
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td style="text-align: center;">{{ $rps->lecturer->name }}</td>
+            <td style="text-align: center;">{{ $rps->lecturer->name }}</td>
+            <td style="text-align: center;">{{ $rps->approved_by ?? '-' }}</td>
+        </tr>
+    </table>
+
+    <!-- Capaian Pembelajaran -->
+    <table class="info-table" style="margin-bottom: 8px;">
+        <tr>
+            <td colspan="2" style="font-weight: bold; background-color: #e0e0e0;">Capaian Pembelajaran (CP)</td>
+        </tr>
+        <tr>
+            <td style="width: 28%;">CPL-PRODI yang dibebankan pada Mata Kuliah</td>
+            <td>
+                @if($ploMapped && count($ploMapped) > 0)
+                    <table style="width: 100%; border-collapse: collapse; font-size: 8pt; margin-top: 5px;">
+                        @foreach($ploMapped as $cpl)
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="width: 10%; font-weight: bold; padding: 3px;">{{ $cpl['code'] }}</td>
+                                <td style="width: 20%; padding: 3px;">{{ $cpl['category'] }}</td>
+                                <td style="width: 70%; padding: 3px; text-align: justify;">{{ $cpl['description'] }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                @else
+                    -
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td>Indikator Kinerja (IK)</td>
+            <td>{{ $rps->performance_indicators ?? 'Indikator kinerja sesuai dengan capaian pembelajaran lulusan' }}</td>
+        </tr>
+        <tr>
+            <td>Capaian Pembelajaran Mata Kuliah (CPMK)</td>
+            <td>
+                @if($cloList && count($cloList) > 0)
+                    <table style="width: 100%; border-collapse: collapse; font-size: 8pt; margin-top: 5px;">
+                        @foreach($cloList as $cpmk)
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="width: 10%; font-weight: bold; padding: 3px;">{{ $cpmk['code'] }}</td>
+                                <td style="width: 60%; padding: 3px; text-align: justify;">{{ $cpmk['description'] }}</td>
+                                <td style="width: 15%; padding: 3px; text-align: center;">Bobot: {{ $cpmk['weight'] }}%</td>
+                                <td style="width: 15%; padding: 3px; text-align: center;">{{ $cpmk['bloom_level'] }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                @else
+                    -
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td>Kemampuan Akhir Tiap Tahapan Belajar (Sub-CPMK)</td>
+            <td>Terdapat pada tabel rencana pembelajaran mingguan di bawah</td>
+        </tr>
+    </table>
+
+    <!-- Deskripsi & Bahan Kajian -->
+    <table class="info-table" style="margin-bottom: 8px;">
+        <tr>
+            <td style="width: 28%;">Deskripsi Singkat MK</td>
+            <td style="text-align: justify;">{{ $rps->course_description }}</td>
+        </tr>
+        <tr>
+            <td>Bahan Kajian / Materi Pembelajaran</td>
+            <td>
+                @if(isset($studyFieldMapped) && count($studyFieldMapped) > 0)
+                    <ul style="margin: 0; padding-left: 20px;">
+                        @foreach($studyFieldMapped as $field)
+                            <li style="margin-bottom: 3px;">
+                                <strong>{{ $field['code'] }}</strong>: {{ $field['name'] }}
+                                @if($field['description'])
+                                    <br><span style="font-size: 7pt; font-style: italic;">{{ $field['description'] }}</span>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    {{ $rps->learning_materials ?? 'Sesuai topik mingguan pada tabel rencana pembelajaran' }}
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    <!-- Pustaka -->
+    <table class="info-table" style="margin-bottom: 8px;">
+        <tr>
+            <td style="width: 28%;">Pustaka</td>
+            <td><strong>Utama:</strong></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                @if($mainReferences)
+                    <ol style="margin: 0; padding-left: 20px;">
+                        @foreach($mainReferences as $ref)
+                            <li style="margin-bottom: 3px;">
+                                @if(is_array($ref))
+                                    {{ $ref['reference'] ?? implode(', ', $ref) }}
+                                @else
+                                    {{ $ref }}
+                                @endif
+                            </li>
+                        @endforeach
+                    </ol>
+                @else
+                    -
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><strong>Pendukung:</strong></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                @if($supportingReferences)
+                    <ol style="margin: 0; padding-left: 20px;">
+                        @foreach($supportingReferences as $ref)
+                            <li style="margin-bottom: 3px;">
+                                @if(is_array($ref))
+                                    {{ $ref['reference'] ?? implode(', ', $ref) }}
+                                @else
+                                    {{ $ref }}
+                                @endif
+                            </li>
+                        @endforeach
+                    </ol>
+                @else
+                    -
+                @endif
+            </td>
+        </tr>
+    </table>
+
+    <!-- Dosen & Prasyarat -->
+    <table class="info-table" style="margin-bottom: 15px;">
+        <tr>
+            <td style="width: 28%;">Dosen Pengampu</td>
+            <td>{{ $rps->lecturer->name }} (NIDN: {{ $rps->lecturer->nidn }})</td>
+        </tr>
+        <tr>
+            <td>Mata Kuliah Syarat</td>
+            <td>{{ $rps->prerequisites ?? '-' }}</td>
+        </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <!-- Tabel Rencana Pembelajaran Mingguan -->
+    @if($weeklyPlan)
+    <table class="weekly-plan-table" style="font-size: 7pt;">
+        <thead>
+            <tr>
+                <th rowspan="2" style="width: 3%; vertical-align: middle;">Mg Ke-</th>
+                <th rowspan="2" style="width: 15%; vertical-align: middle;">Sub-CPMK<br>(Kemampuan akhir tiap tahapan belajar)</th>
+                <th colspan="2" style="width: 27%;">Penilaian</th>
+                <th colspan="3" style="width: 38%;">Bentuk Pembelajaran</th>
+                <th rowspan="2" style="width: 12%; vertical-align: middle;">Materi Pembelajaran<br>[Pustaka]</th>
+                <th rowspan="2" style="width: 5%; vertical-align: middle;">Bobot Penilaian (%)</th>
+            </tr>
+            <tr>
+                <th style="width: 12%;">Indikator</th>
+                <th style="width: 15%;">Kriteria & Bentuk</th>
+                <th style="width: 13%;">Bentuk Pembelajaran</th>
+                <th style="width: 13%;">Metode Pembelajaran</th>
+                <th style="width: 12%;">Rencana Tugas Mahasiswa (RTM)</th>
+            </tr>
+            <tr style="font-size: 6pt; font-style: italic;">
+                <th>(1)</th>
+                <th>(2)</th>
+                <th>(3)</th>
+                <th>(4)</th>
+                <th>(5)</th>
+                <th>(6)</th>
+                <th>(7)</th>
+                <th>(8)</th>
+                <th>(9)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($weeklyPlan as $index => $week)
+                @php
+                    $weekNumber = $week['week'] ?? ($index + 1);
+                @endphp
+
+                @if($weekNumber == 8)
+                    <tr style="background-color: #e0e0e0; font-weight: bold;">
+                        <td colspan="9" style="text-align: center; padding: 6px;">Evaluasi Tengah Semester / Ujian Tengah Semester</td>
+                    </tr>
+                @elseif($weekNumber == 17)
+                    <tr style="background-color: #e0e0e0; font-weight: bold;">
+                        <td colspan="9" style="text-align: center; padding: 6px;">Evaluasi Akhir Semester / Ujian Akhir Semester</td>
+                    </tr>
+                @else
+                    <tr>
+                        <td style="text-align: center; font-weight: bold;">{{ $weekNumber }}</td>
+                        <td style="text-align: justify;">
+                            @if(isset($week['sub_cpmk']))
+                                {{ is_array($week['sub_cpmk']) ? implode(', ', $week['sub_cpmk']) : $week['sub_cpmk'] }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td style="text-align: justify;">
+                            @if(isset($week['indicators']))
+                                {{ is_array($week['indicators']) ? implode(', ', $week['indicators']) : $week['indicators'] }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td style="text-align: justify;">
+                            @if(isset($week['assessment']))
+                                {{ is_array($week['assessment']) ? implode(', ', $week['assessment']) : $week['assessment'] }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td style="text-align: justify;">
+                            @if(isset($week['learning_form']))
+                                {{ is_array($week['learning_form']) ? implode(', ', $week['learning_form']) : $week['learning_form'] }}
+                            @else
+                                Perkuliahan
+                            @endif
+                        </td>
+                        <td style="text-align: justify;">
+                            @if(isset($week['methods']))
+                                {{ is_array($week['methods']) ? implode(', ', $week['methods']) : $week['methods'] }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td style="text-align: justify;">
+                            @if(isset($week['student_tasks']))
+                                {{ is_array($week['student_tasks']) ? implode(', ', $week['student_tasks']) : $week['student_tasks'] }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td style="text-align: justify;">
+                            @if(isset($week['topics']))
+                                {{ is_array($week['topics']) ? implode('; ', $week['topics']) : $week['topics'] }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td style="text-align: center;">
+                            {{ $week['weight'] ?? '0' }}
+                        </td>
+                    </tr>
+                @endif
+            @endforeach
+        </tbody>
+    </table>
+    @endif
+
+    <!-- Footer -->
+    <div class="footer" style="margin-top: 15px;">
+        <p>Dokumen RPS {{ $rps->course->code }} - Tahun Akademik {{ $rps->academic_year }}</p>
+        <p>Halaman 1 dari 1</p>
+    </div>
+</body>
+</html>

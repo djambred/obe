@@ -21,6 +21,13 @@ class DatabaseSeeder extends Seeder
             StudyProgramSeeder::class,
             CurriculumSeeder::class,
             StudyFieldSeeder::class,
+            CourseSeeder::class,
+            GraduateProfileSeeder::class,
+            LecturerSeeder::class,
+            ProgramLearningOutcomeSeeder::class,  // CPL
+            CourseLearningOutcomeSeeder::class,    // CPMK
+            SubCourseLearningOutcomeSeeder::class, // Sub-CPMK & Indikator Kinerja
+            RpsSeeder::class,                      // RPS
         ]);
     }
 }
