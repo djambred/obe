@@ -32,15 +32,22 @@ class MinioPublic extends Command
 
             $this->info("Setting bucket '{$bucket}' to public...");
 
-            // Set bucket policy to public read
+            // Set bucket policy to allow public read
+            // MinIO requires both GetObject and ListBucket for proper access
             $policy = [
                 'Version' => '2012-10-17',
                 'Statement' => [
                     [
                         'Effect' => 'Allow',
-                        'Principal' => '*',
-                        'Action' => 's3:GetObject',
+                        'Principal' => ['AWS' => ['*']],
+                        'Action' => ['s3:GetObject', 's3:GetObjectVersion'],
                         'Resource' => "arn:aws:s3:::{$bucket}/*",
+                    ],
+                    [
+                        'Effect' => 'Allow',
+                        'Principal' => ['AWS' => ['*']],
+                        'Action' => ['s3:ListBucket', 's3:ListBucketVersions'],
+                        'Resource' => "arn:aws:s3:::{$bucket}",
                     ],
                 ],
             ];
@@ -52,17 +59,24 @@ class MinioPublic extends Command
 
             $this->info("✓ Bucket policy updated successfully");
 
-            // Set bucket versioning (optional but recommended)
+            // Remove bucket encryption if set (can block public access)
             try {
-                $client->putBucketVersioning([
-                    'Bucket' => $bucket,
-                    'VersioningConfiguration' => [
-                        'Status' => 'Enabled',
-                    ],
-                ]);
-                $this->info("✓ Versioning enabled");
+                $client->deleteBucketEncryption(['Bucket' => $bucket]);
+                $this->info("✓ Removed bucket encryption");
             } catch (AwsException $e) {
-                $this->warn("Could not enable versioning: " . $e->getMessage());
+                // Bucket encryption might not be set, that's fine
+                $this->line("ℹ Bucket encryption not set (expected)");
+            }
+
+            // Make sure ACL is public
+            try {
+                $client->putBucketAcl([
+                    'Bucket' => $bucket,
+                    'ACL' => 'public-read',
+                ]);
+                $this->info("✓ ACL set to public-read");
+            } catch (AwsException $e) {
+                $this->warn("Could not set ACL: " . $e->getMessage());
             }
 
             // Check current policy
