@@ -66,20 +66,18 @@ class AppServiceProvider extends ServiceProvider
         Storage::extend('minio-wrapper', function ($app, $config) {
             $disk = Storage::createS3Driver($config);
 
-            // Wrap url() method
+            // Wrap url() method dengan anonymous class
             return new class($disk, $config) extends FilesystemAdapter {
                 private $wrappedDisk;
-                private $config;
 
                 public function __construct($disk, $config) {
                     $this->wrappedDisk = $disk;
-                    $this->config = $config;
                     parent::__construct($disk->getDriver(), $disk->getAdapter(), $config);
                 }
 
                 public function url($path): string
                 {
-                    // Build URL dari config
+                    // Build URL dari config (gunakan parent's protected $config)
                     $baseUrl = rtrim($this->config['url'], '/');
                     $url = $baseUrl . '/' . ltrim($path, '/');
 
@@ -89,10 +87,8 @@ class AppServiceProvider extends ServiceProvider
 
                 private function convertMinioUrl(string $url): string
                 {
-                    // Convert ke HTTPS jika request secure
-                    if (request()->secure()) {
-                        $url = str_replace('http://', 'https://', $url);
-                    }
+                    // Convert ke HTTPS
+                    $url = str_replace('http://', 'https://', $url);
 
                     // Replace internal hostname dengan public hostname + /s3 path
                     $publicHost = parse_url(config('app.url'), PHP_URL_HOST);
