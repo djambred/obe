@@ -19,7 +19,7 @@ class PerformanceIndicatorResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static ?string $navigationGroup = '🎯 Learning Outcomes';
+    protected static ?string $navigationGroup = 'Capaian Pembelajaran';
 
     protected static ?int $navigationSort = 44;
 

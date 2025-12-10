@@ -19,7 +19,7 @@ class ContinuousImprovementResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-trending-up';
 
-    protected static ?string $navigationGroup = '📊 Assessment & Evaluasi';
+    protected static ?string $navigationGroup = 'Assessment & Evaluasi';
 
     protected static ?int $navigationSort = 51;
 

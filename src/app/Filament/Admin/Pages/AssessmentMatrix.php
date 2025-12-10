@@ -25,7 +25,7 @@ class AssessmentMatrix extends Page implements HasForms
 
     protected static ?string $title = 'Matriks Bobot Penilaian OBE';
 
-    protected static ?string $navigationGroup = 'Academic Management';
+    protected static ?string $navigationGroup = 'Assessment & Evaluasi';
 
     protected static ?int $navigationSort = 6;
 

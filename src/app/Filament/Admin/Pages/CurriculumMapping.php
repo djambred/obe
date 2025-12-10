@@ -25,7 +25,7 @@ class CurriculumMapping extends Page implements HasForms
 
     protected static ?string $title = 'Peta Kurikulum & Mapping Pembelajaran';
 
-    protected static ?string $navigationGroup = 'Academic Management';
+    protected static ?string $navigationGroup = 'Assessment & Evaluasi';
 
     protected static ?int $navigationSort = 5;
 

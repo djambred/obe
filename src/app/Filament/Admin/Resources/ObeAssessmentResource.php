@@ -19,7 +19,7 @@ class ObeAssessmentResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-presentation-chart-line';
 
-    protected static ?string $navigationGroup = '📊 Assessment & Evaluasi';
+    protected static ?string $navigationGroup = 'Assessment & Evaluasi';
 
     protected static ?int $navigationSort = 50;
 

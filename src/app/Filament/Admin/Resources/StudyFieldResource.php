@@ -19,7 +19,7 @@ class StudyFieldResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-light-bulb';
 
-    protected static ?string $navigationGroup = '📚 Kurikulum';
+    protected static ?string $navigationGroup = 'Kurikulum & MK';
 
     protected static ?int $navigationSort = 21;
 

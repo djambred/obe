@@ -18,7 +18,7 @@ class UniversityResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-library';
 
-    protected static ?string $navigationGroup = '🏛️ Institusi';
+    protected static ?string $navigationGroup = 'Institusi';
 
     protected static ?int $navigationSort = 1;
 

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\SubCourseLearningOutcome;
-use App\Models\PerformanceIndicator;
 use App\Models\CourseLearningOutcome;
 use Illuminate\Database\Seeder;
 
@@ -33,7 +32,7 @@ class SubCourseLearningOutcomeSeeder extends Seeder
             $this->seedMachineLearningSubCPMK($cpmkML);
         }
 
-        $this->command->info('Sub-CPMK and Performance Indicators seeded successfully!');
+        $this->command->info('Sub-CPMK seeded successfully!');
     }
 
     private function seedAlgoritmaPemrogramanSubCPMK($cpmkList)
@@ -69,8 +68,7 @@ class SubCourseLearningOutcomeSeeder extends Seeder
             ];
 
             foreach ($subCpmk as $data) {
-                $sub = SubCourseLearningOutcome::create($data);
-                $this->createPerformanceIndicators($sub->id, $cpmk01->id);
+                SubCourseLearningOutcome::create($data);
             }
         }
 
@@ -117,8 +115,7 @@ class SubCourseLearningOutcomeSeeder extends Seeder
             ];
 
             foreach ($subCpmk as $data) {
-                $sub = SubCourseLearningOutcome::create($data);
-                $this->createPerformanceIndicators($sub->id, $cpmk02->id);
+                SubCourseLearningOutcome::create($data);
             }
         }
 
@@ -153,8 +150,7 @@ class SubCourseLearningOutcomeSeeder extends Seeder
             ];
 
             foreach ($subCpmk as $data) {
-                $sub = SubCourseLearningOutcome::create($data);
-                $this->createPerformanceIndicators($sub->id, $cpmk03->id);
+                SubCourseLearningOutcome::create($data);
             }
         }
     }
@@ -192,8 +188,7 @@ class SubCourseLearningOutcomeSeeder extends Seeder
             ];
 
             foreach ($subCpmk as $data) {
-                $sub = SubCourseLearningOutcome::create($data);
-                $this->createPerformanceIndicators($sub->id, $cpmk01->id);
+                SubCourseLearningOutcome::create($data);
             }
         }
 
@@ -240,77 +235,8 @@ class SubCourseLearningOutcomeSeeder extends Seeder
             ];
 
             foreach ($subCpmk as $data) {
-                $sub = SubCourseLearningOutcome::create($data);
-                $this->createPerformanceIndicators($sub->id, $cpmk04->id);
+                SubCourseLearningOutcome::create($data);
             }
-        }
-    }
-
-    private function createPerformanceIndicators($subCpmkId, $cpmkId)
-    {
-        // Indikator Kinerja Standar
-        $indicators = [
-            [
-                'sub_course_learning_outcome_id' => $subCpmkId,
-                'course_learning_outcome_id' => $cpmkId,
-                'code' => 'IK-01',
-                'description' => 'Ketepatan dalam menjelaskan konsep (tingkat pemahaman)',
-                'criteria' => 'Mampu menjelaskan konsep dengan benar minimal 80%',
-                'rubric' => json_encode([
-                    'Sangat Baik (90-100)' => 'Menjelaskan konsep dengan sangat tepat, lengkap, dan sistematis',
-                    'Baik (80-89)' => 'Menjelaskan konsep dengan tepat dan cukup lengkap',
-                    'Cukup (70-79)' => 'Menjelaskan konsep dengan cukup tepat namun kurang lengkap',
-                    'Kurang (60-69)' => 'Menjelaskan konsep kurang tepat dan tidak lengkap',
-                    'Sangat Kurang (<60)' => 'Tidak mampu menjelaskan konsep dengan benar'
-                ]),
-                'weight' => 30.00,
-                'assessment_type' => 'Ujian Tulis',
-                'passing_grade' => 70.00,
-                'order' => 1,
-                'is_active' => true,
-            ],
-            [
-                'sub_course_learning_outcome_id' => $subCpmkId,
-                'course_learning_outcome_id' => $cpmkId,
-                'code' => 'IK-02',
-                'description' => 'Kemampuan implementasi dalam praktikum',
-                'criteria' => 'Program berjalan dengan benar dan sesuai spesifikasi',
-                'rubric' => json_encode([
-                    'Sangat Baik (90-100)' => 'Program berjalan sempurna, efisien, dan dengan kode yang rapi',
-                    'Baik (80-89)' => 'Program berjalan dengan benar dan cukup efisien',
-                    'Cukup (70-79)' => 'Program berjalan namun kurang efisien',
-                    'Kurang (60-69)' => 'Program berjalan dengan error minor',
-                    'Sangat Kurang (<60)' => 'Program tidak berjalan atau banyak error'
-                ]),
-                'weight' => 50.00,
-                'assessment_type' => 'Praktikum',
-                'passing_grade' => 70.00,
-                'order' => 2,
-                'is_active' => true,
-            ],
-            [
-                'sub_course_learning_outcome_id' => $subCpmkId,
-                'course_learning_outcome_id' => $cpmkId,
-                'code' => 'IK-03',
-                'description' => 'Kualitas dokumentasi dan penjelasan kode',
-                'criteria' => 'Kode terdokumentasi dengan baik dan mudah dipahami',
-                'rubric' => json_encode([
-                    'Sangat Baik (90-100)' => 'Dokumentasi sangat lengkap, kode terstruktur dan mudah dipahami',
-                    'Baik (80-89)' => 'Dokumentasi lengkap dan kode cukup terstruktur',
-                    'Cukup (70-79)' => 'Dokumentasi cukup namun masih ada yang kurang jelas',
-                    'Kurang (60-69)' => 'Dokumentasi kurang lengkap dan kode sulit dipahami',
-                    'Sangat Kurang (<60)' => 'Tidak ada dokumentasi atau sangat minimal'
-                ]),
-                'weight' => 20.00,
-                'assessment_type' => 'Tugas Individu',
-                'passing_grade' => 70.00,
-                'order' => 3,
-                'is_active' => true,
-            ],
-        ];
-
-        foreach ($indicators as $data) {
-            PerformanceIndicator::create($data);
         }
     }
 }

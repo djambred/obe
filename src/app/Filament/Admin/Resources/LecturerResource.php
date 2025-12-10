@@ -20,7 +20,7 @@ class LecturerResource extends Resource
 
     protected static ?string $navigationLabel = 'Dosen';
 
-    protected static ?string $navigationGroup = '👥 SDM';
+    protected static ?string $navigationGroup = 'SDM Dosen';
 
     protected static ?int $navigationSort = 10;
 

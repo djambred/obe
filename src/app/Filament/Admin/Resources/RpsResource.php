@@ -19,7 +19,7 @@ class RpsResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationGroup = '📝 RPS';
+    protected static ?string $navigationGroup = 'Kurikulum & MK';
 
     protected static ?int $navigationSort = 30;
 

@@ -20,7 +20,7 @@ class CpmkCplMatrix extends Page implements HasForms
 
     protected static string $view = 'filament.admin.pages.cpmk-cpl-matrix';
 
-    protected static ?string $navigationGroup = 'Academic Management';
+    protected static ?string $navigationGroup = 'Assessment & Evaluasi';
 
     protected static ?string $title = 'Matriks CPMK terhadap CPL';
 

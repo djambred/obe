@@ -19,7 +19,7 @@ class CurriculumResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
 
-    protected static ?string $navigationGroup = '📚 Kurikulum';
+    protected static ?string $navigationGroup = 'Kurikulum & MK';
 
     protected static ?int $navigationSort = 20;
 

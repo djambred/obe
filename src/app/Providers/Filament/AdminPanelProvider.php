@@ -56,33 +56,52 @@ class AdminPanelProvider extends PanelProvider
                 \Awcodes\Overlook\Widgets\OverlookWidget::class,
             ])
             ->navigationGroups([
+                // Data lembaga
+                NavigationGroup::make()
+                    ->label('Institusi')
+                    ->icon('heroicon-o-building-library')
+                    ->collapsed(),
+                // Sumber daya manusia
+                NavigationGroup::make()
+                    ->label('SDM Dosen')
+                    ->icon('heroicon-o-users')
+                    ->collapsed(),
+
+                // Akademik & perkuliahan
+                NavigationGroup::make()
+                    ->label('Akademik')
+                    ->icon('heroicon-o-academic-cap')
+                    ->collapsed(),
+
+
+
+                // Kurikulum & mata kuliah
+                NavigationGroup::make()
+                    ->label('Kurikulum & MK')
+                    ->icon('heroicon-o-book-open')
+                    ->collapsed(),
+
+                // Dokumen RPS
+                NavigationGroup::make()
+                    ->label('RPS')
+                    ->icon('heroicon-o-document-text')
+                    ->collapsed(),
+
+                // Capaian pembelajaran
+                NavigationGroup::make()
+                    ->label('Capaian Pembelajaran')
+                    ->icon('heroicon-o-light-bulb')
+                    ->collapsed(),
+
+                // Assessment & evaluasi
+                NavigationGroup::make()
+                    ->label('Assessment & Evaluasi')
+                    ->icon('heroicon-o-chart-bar')
+                    ->collapsed(),
+                // Admin & keamanan sistem
                 NavigationGroup::make()
                     ->label('Administration')
                     ->icon('heroicon-o-cog-6-tooth')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('🏛️ Institusi')
-                    ->icon('heroicon-o-building-library')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('Academic Management')
-                    ->icon('heroicon-o-academic-cap')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('👥 SDM')
-                    ->icon('heroicon-o-users')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('📚 Kurikulum')
-                    ->icon('heroicon-o-book-open')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('📝 RPS')
-                    ->icon('heroicon-o-document-text')
-                    ->collapsed(),
-                NavigationGroup::make()
-                    ->label('🎯 Learning Outcomes')
-                    ->icon('heroicon-o-light-bulb')
                     ->collapsed(),
             ])
             ->userMenuItems([
@@ -116,7 +135,7 @@ class AdminPanelProvider extends PanelProvider
                     ->formPanelPosition('right')
                     ->formPanelWidth('40%')
                     ->emptyPanelBackgroundImageOpacity('70%')
-                    ->emptyPanelBackgroundImageUrl('https://picsum.photos/seed/picsum/1260/750.webp/?blur=1'),
+                    ->emptyPanelBackgroundImageUrl('https://images.unsplash.com/photo-1517520287167-4bbf64a00d66?auto=format&fit=crop&w=1260&q=80&sat=-15&exp=5'),
                 \Awcodes\LightSwitch\LightSwitchPlugin::make()
                     ->position(\Awcodes\LightSwitch\Enums\Alignment::BottomCenter)
                     ->enabledOn([
