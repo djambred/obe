@@ -36,15 +36,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Force HTTPS URLs in production
-        if (request()->secure()) {
-            URL::forceScheme('https');
-        }
+        URL::forceScheme('https');
 
-        // Configure MinIO presigned URLs
-        $this->configureMinioPresignedUrls();
-
-        // Add macro untuk Livewire temporary upload URLs
-        $this->addFilesystemMacros();
+        // Configure MinIO URL resolver
+        $this->configureMinioUrls();
 
         Gate::policy(Activity::class, ActivityPolicy::class);
         Page::formActionsAlignment(Alignment::Right);
@@ -62,62 +57,55 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Configure MinIO presigned URLs untuk Livewire FileUpload
+     * Configure MinIO URLs untuk Livewire FileUpload
      * Handles both local & production environments
      */
-    protected function configureMinioPresignedUrls(): void
+    protected function configureMinioUrls(): void
     {
-        $disk = Storage::disk('minio');
+        // Extend Storage to resolve MinIO disk dinamis
+        Storage::extend('minio-wrapper', function ($app, $config) {
+            $disk = Storage::createS3Driver($config);
 
-        // Override URL generation (untuk view/display files)
-        Storage::disk('minio')->buildTemporaryUrlsUsing(function ($path, $expiration, $options) use ($disk) {
-            $adapter = $disk->getAdapter();
-            $client = $adapter->getClient();
+            // Wrap url() method
+            return new class($disk, $config) extends FilesystemAdapter {
+                private $wrappedDisk;
+                private $config;
 
-            $command = $client->getCommand('GetObject', array_merge([
-                'Bucket' => config('filesystems.disks.minio.bucket'),
-                'Key' => $adapter->prefixer()->prefixPath($path),
-            ], $options));
+                public function __construct($disk, $config) {
+                    $this->wrappedDisk = $disk;
+                    $this->config = $config;
+                    parent::__construct($disk->getDriver(), $disk->getAdapter(), $config);
+                }
 
-            $request = $client->createPresignedRequest($command, $expiration);
-            $url = (string) $request->getUri();
+                public function url($path): string
+                {
+                    // Build URL dari config
+                    $baseUrl = rtrim($this->config['url'], '/');
+                    $url = $baseUrl . '/' . ltrim($path, '/');
 
-            return $this->convertMinioUrl($url);
-        });
-    }
+                    // Convert ke HTTPS production URL
+                    return $this->convertMinioUrl($url);
+                }
 
-    /**
-     * Add custom macros to FilesystemAdapter for Livewire
-     */
-    protected function addFilesystemMacros(): void
-    {
-        // Override url() method untuk convert MinIO URLs
-        FilesystemAdapter::macro('url', function ($path) {
-            $url = $this->config['url'] . '/' . ltrim($path, '/');
-            return app(AppServiceProvider::class)->convertMinioUrl($url);
-        });
+                private function convertMinioUrl(string $url): string
+                {
+                    // Convert ke HTTPS jika request secure
+                    if (request()->secure()) {
+                        $url = str_replace('http://', 'https://', $url);
+                    }
 
-        // Macro untuk generate temporary upload URL (Livewire FileUpload)
-        FilesystemAdapter::macro('temporaryUploadUrl', function ($path, $expiration = null, array $options = []) {
-            $adapter = $this->adapter;
+                    // Replace internal hostname dengan public hostname + /s3 path
+                    $publicHost = parse_url(config('app.url'), PHP_URL_HOST);
+                    $url = preg_replace('/(minio|localhost):9000/', $publicHost . '/s3', $url);
 
-            if (!method_exists($adapter, 'getClient')) {
-                throw new \RuntimeException('Adapter does not support temporary URLs');
-            }
+                    return $url;
+                }
 
-            $client = $adapter->getClient();
-            $expiration = $expiration ?? now()->addMinutes(5);
-
-            $command = $client->getCommand('PutObject', array_merge([
-                'Bucket' => $this->config['bucket'],
-                'Key' => $adapter->prefixer()->prefixPath($path),
-                'ACL' => 'public-read',
-            ], $options));
-
-            $request = $client->createPresignedRequest($command, $expiration);
-            $url = (string) $request->getUri();
-
-            return app(AppServiceProvider::class)->convertMinioUrl($url);
+                public function __call($method, $parameters)
+                {
+                    return $this->wrappedDisk->$method(...$parameters);
+                }
+            };
         });
     }
 

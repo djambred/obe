@@ -61,7 +61,7 @@ return [
         ],
 
         'minio' => [
-            'driver' => 's3',
+            'driver' => 'minio-wrapper',
             'key' => env('MINIO_ACCESS_KEY', 'minioadmin'),
             'secret' => env('MINIO_SECRET_KEY', 'minioadmin'),
             'region' => env('MINIO_REGION', 'us-east-1'),
