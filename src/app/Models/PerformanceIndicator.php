@@ -22,15 +22,16 @@ class PerformanceIndicator extends Model
         'assessment_type',
         'passing_grade',
         'grading_scale',
+        'grading_scale_level',
+        'faculty_id',
+        'study_program_id',
         'order',
         'is_active',
     ];
 
     protected $casts = [
-        'rubric' => 'array',
         'weight' => 'decimal:2',
         'passing_grade' => 'decimal:2',
-        'grading_scale' => 'array',
         'is_active' => 'boolean',
     ];
 
@@ -42,5 +43,15 @@ class PerformanceIndicator extends Model
     public function courseLearningOutcome(): BelongsTo
     {
         return $this->belongsTo(CourseLearningOutcome::class);
+    }
+
+    public function faculty(): BelongsTo
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
+    public function studyProgram(): BelongsTo
+    {
+        return $this->belongsTo(StudyProgram::class);
     }
 }

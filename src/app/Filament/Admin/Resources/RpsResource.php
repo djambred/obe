@@ -256,20 +256,15 @@ class RpsResource extends Resource
                                                     ->orderBy('code')
                                                     ->get()
                                                     ->mapWithKeys(function ($clo) {
-                                                        return [$clo->code => "{$clo->code}: {$clo->description}"];
-                                                    })
-                                                    ->toArray();
-                                            })
-                                            ->descriptions(function (Forms\Get $get) {
-                                                $courseId = $get('course_id');
-                                                if (!$courseId) {
-                                                    return [];
-                                                }
-                                                return \App\Models\CourseLearningOutcome::where('course_id', $courseId)
-                                                    ->orderBy('code')
-                                                    ->get()
-                                                    ->mapWithKeys(function ($clo) {
-                                                        return [$clo->code => "Bobot: {$clo->weight}% | Bloom Level: {$clo->bloom_level}"];
+                                                        return [
+                                                            $clo->code => sprintf(
+                                                                "%s: %s (Bobot: %s%% | Bloom: %s)",
+                                                                $clo->code,
+                                                                $clo->description,
+                                                                $clo->weight,
+                                                                $clo->bloom_level
+                                                            )
+                                                        ];
                                                     })
                                                     ->toArray();
                                             })
@@ -277,7 +272,8 @@ class RpsResource extends Resource
                                             ->searchable()
                                             ->bulkToggleable()
                                             ->columnSpanFull()
-                                            ->live(),
+                                            ->live()
+                                            ->helperText('Gunakan kotak pencarian untuk menemukan CPMK. Contoh: "CPMK-01", "algoritma", "pemahaman"'),
 
                                         Forms\Components\Placeholder::make('cpmk_info')
                                             ->label('Informasi')

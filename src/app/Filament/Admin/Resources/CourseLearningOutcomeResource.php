@@ -117,6 +117,7 @@ class CourseLearningOutcomeResource extends Resource
                 Tables\Columns\TextColumn::make('bloom_affective_level'),
                 Tables\Columns\TextColumn::make('bloom_psychomotor_level'),
                 Tables\Columns\TextColumn::make('weight')
+                    ->label('Bobot (%)')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('order')

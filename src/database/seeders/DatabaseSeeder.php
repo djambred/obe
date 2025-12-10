@@ -26,7 +26,9 @@ class DatabaseSeeder extends Seeder
             LecturerSeeder::class,
             ProgramLearningOutcomeSeeder::class,  // CPL
             CourseLearningOutcomeSeeder::class,    // CPMK
+            CpmkCplMappingSeeder::class,           // CPMK-CPL Mapping
             SubCourseLearningOutcomeSeeder::class, // Sub-CPMK & Indikator Kinerja
+            PerformanceIndicatorSeeder::class,     // Performance Indicators
             RpsSeeder::class,                      // RPS
         ]);
     }
