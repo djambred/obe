@@ -31,10 +31,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Force HTTPS URLs in production
                
-        if ($this->app->environment('production') || request()->header('X-Forwarded-Proto') === 'https') {
+        if ($this->app->environment('local') || request()->header('X-Forwarded-Proto') === 'https') {
             \URL::forceScheme('https');
         }
-        
         Gate::policy(Activity::class, ActivityPolicy::class);
         Page::formActionsAlignment(Alignment::Right);
         Notifications::alignment(Alignment::End);
