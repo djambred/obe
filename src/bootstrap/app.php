@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'livewire/upload-file/*',
         ]);
 
-        \App\Http\Middleware\TrustProxies::class,
+        $middleware->push(\App\Http\Middleware\TrustProxies::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
