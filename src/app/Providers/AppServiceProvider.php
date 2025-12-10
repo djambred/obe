@@ -10,6 +10,7 @@ use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\VerticalAlignment;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
@@ -30,9 +31,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Force HTTPS URLs in production
-               
-        if ($this->app->environment('local') || request()->header('X-Forwarded-Proto') === 'https') {
-            \URL::forceScheme('https');
+
+        if ($this->app->environment('production', 'local')) {
+            URL::forceScheme('https');
         }
         Gate::policy(Activity::class, ActivityPolicy::class);
         Page::formActionsAlignment(Alignment::Right);
