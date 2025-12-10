@@ -81,6 +81,7 @@ class MinioSetup extends Command
                 'faculties/logos',
                 'study-programs/logos',
                 'temp',
+                'livewire-tmp',
             ];
 
             foreach ($directories as $dir) {
