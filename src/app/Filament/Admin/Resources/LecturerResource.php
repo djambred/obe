@@ -35,6 +35,7 @@ class LecturerResource extends Resource
                                 Forms\Components\Section::make('Data Diri')
                                     ->schema([
                                         Forms\Components\FileUpload::make('photo')
+                                            ->visibility('public')
                                             ->label('Foto')
                                             ->image()
                                             ->disk('minio')

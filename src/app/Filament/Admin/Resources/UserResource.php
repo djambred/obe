@@ -55,6 +55,7 @@ class UserResource extends Resource
                             ->columnSpan('full')
                             ->required(),
                         Forms\Components\FileUpload::make('avatar_url')
+                            ->visibility('public')
                             ->label('Avatar')
                             ->image()
                             ->optimize('webp')

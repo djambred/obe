@@ -71,6 +71,7 @@ class FacultyResource extends Resource
                     ->rows(2)
                     ->columnSpanFull(),
                 Forms\Components\FileUpload::make('logo')
+                    ->visibility('public')
                     ->label('Logo Fakultas')
                     ->helperText('Upload logo fakultas (format: JPG, PNG, max 2MB)')
                     ->image()

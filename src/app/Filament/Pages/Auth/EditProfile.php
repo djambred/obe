@@ -96,6 +96,7 @@ class EditProfile extends BaseEditProfile
                 Forms\Components\Grid::make('')
                     ->schema([
                         Forms\Components\FileUpload::make('avatar_url')
+                            ->visibility('public')
                             ->label('Avatar')
                             ->directory('avatars')
                             ->image()

@@ -47,6 +47,7 @@ class UniversityResource extends Resource
                             ->image()
                             ->disk('minio')
                             ->directory('universities/logos')
+                            ->visibility('public')
                             ->maxSize(2048),
                         Forms\Components\Textarea::make('description')
                             ->label('Deskripsi')
