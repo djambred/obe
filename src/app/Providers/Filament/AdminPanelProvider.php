@@ -171,7 +171,7 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
                 \Hasnayeen\Themes\Http\Middleware\SetTheme::class,
-                \App\Http\Middleware\SecurityHeaders::class,
+                //\App\Http\Middleware\SecurityHeaders::class,
                 \App\Http\Middleware\ForceHttpsUrls::class,
             ])
             ->authMiddleware([
