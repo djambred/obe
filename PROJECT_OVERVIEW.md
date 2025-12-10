@@ -208,7 +208,7 @@ users / roles / permissions → Auth & authorization
 - [x] Live validation dengan notification
 - [x] Database constraint (unique index)
 - [x] RPS PDF generation dengan DomPDF
-- [x] PDF template profesional (Esa Unggul format)
+- [x] PDF template profesional 
 - [x] QR Code integration untuk verifikasi
 - [x] Preview PDF inline
 - [x] Download PDF

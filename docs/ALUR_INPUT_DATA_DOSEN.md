@@ -72,7 +72,7 @@ TAHAP 5: VALIDATION & EXPORT
 ### 1.1 Universitas & Fakultas
 ```
 Menu: Administration → Universitas
-- Nama universitas (sudah ada: Esa Unggul)
+- Nama universitas 
 - Logo, visi, misi, akreditasi
 ```
 
