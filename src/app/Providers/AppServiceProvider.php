@@ -3,16 +3,20 @@
 namespace App\Providers;
 
 use App\Policies\ActivityPolicy;
+use Aws\S3\S3Client;
 use Filament\Actions\MountableAction;
 use Filament\Notifications\Livewire\Notifications;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\VerticalAlignment;
+use Illuminate\Filesystem\AwsS3V3Adapter;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\ValidationException;
+use League\Flysystem\Filesystem;
 use Spatie\Activitylog\Models\Activity;
 
 class AppServiceProvider extends ServiceProvider
@@ -32,11 +36,11 @@ class AppServiceProvider extends ServiceProvider
     {
         // Force HTTPS URLs in production
         if (request()->secure()) {
-            \Illuminate\Support\Facades\URL::forceScheme('https');
-
-            // Override MinIO presigned URL generation untuk production
-            $this->configureMinioPresignedUrls();
+            URL::forceScheme('https');
         }
+
+        // Configure MinIO presigned URLs
+        $this->configureMinioPresignedUrls();
 
         Gate::policy(Activity::class, ActivityPolicy::class);
         Page::formActionsAlignment(Alignment::Right);
@@ -59,34 +63,16 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureMinioPresignedUrls(): void
     {
-        $disk = \Illuminate\Support\Facades\Storage::disk('minio');
+        $disk = Storage::disk('minio');
 
         // Override temporary URL generation (untuk download/view)
-        $disk->buildTemporaryUrlsUsing(function ($path, $expiration, $options) {
-            $adapter = \Illuminate\Support\Facades\Storage::disk('minio')->getAdapter();
+        $disk->buildTemporaryUrlsUsing(function ($path, $expiration, $options) use ($disk) {
+            $adapter = $disk->getAdapter();
             $client = $adapter->getClient();
 
             $command = $client->getCommand('GetObject', array_merge([
                 'Bucket' => config('filesystems.disks.minio.bucket'),
                 'Key' => $adapter->prefixer()->prefixPath($path),
-            ], $options));
-
-            $request = $client->createPresignedRequest($command, $expiration);
-            $url = (string) $request->getUri();
-
-            return $this->convertMinioUrl($url);
-        });
-
-        // Override temporary upload URL generation (untuk Livewire FileUpload)
-        $disk->buildPutTemporaryUrlsUsing(function ($path, $expiration, $options) {
-            $adapter = \Illuminate\Support\Facades\Storage::disk('minio')->getAdapter();
-            $client = $adapter->getClient();
-
-            // Livewire FileUpload butuh public-read ACL
-            $command = $client->getCommand('PutObject', array_merge([
-                'Bucket' => config('filesystems.disks.minio.bucket'),
-                'Key' => $adapter->prefixer()->prefixPath($path),
-                'ACL' => 'public-read', // Important untuk Livewire
             ], $options));
 
             $request = $client->createPresignedRequest($command, $expiration);
