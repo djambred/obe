@@ -23,15 +23,15 @@ class CurriculumResource extends Resource
 
     protected static ?int $navigationSort = 20;
 
-    protected static ?string $pluralModelLabel = 'Curriculums';
+    protected static ?string $pluralModelLabel = 'Kurikulum';
 
-    protected static ?string $modelLabel = 'Curriculum';
+    protected static ?string $modelLabel = 'Kurikulum';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Dasar')
+                Forms\Components\Section::make('Informasi Dasar (DIKTI/OBE)')
                     ->schema([
                         Forms\Components\Select::make('study_program_id')
                             ->label('Program Studi')
@@ -40,12 +40,6 @@ class CurriculumResource extends Resource
                             ->preload()
                             ->helperText('Pilih program studi untuk kurikulum ini')
                             ->required(),
-                        Forms\Components\TextInput::make('code')
-                            ->label('Kode Kurikulum')
-                            ->placeholder('Contoh: K2024')
-                            ->helperText('Kode unik untuk kurikulum ini')
-                            ->required()
-                            ->maxLength(255),
                         Forms\Components\TextInput::make('name')
                             ->label('Nama Kurikulum')
                             ->placeholder('Contoh: Kurikulum 2024')
@@ -60,97 +54,111 @@ class CurriculumResource extends Resource
                             ->numeric()
                             ->minValue(2020)
                             ->maxValue(2050),
-                        Forms\Components\TextInput::make('academic_year_end')
-                            ->label('Tahun Berakhir')
-                            ->placeholder('2028')
-                            ->helperText('Tahun akademik berakhir (opsional, kosongkan jika masih berlaku)')
-                            ->numeric()
-                            ->minValue(2020)
-                            ->maxValue(2050),
-                        Forms\Components\DatePicker::make('effective_date')
-                            ->label('Tanggal Efektif')
-                            ->helperText('Tanggal mulai berlaku kurikulum')
-                            ->required(),
                         Forms\Components\Toggle::make('is_active')
                             ->label('Status Aktif')
                             ->helperText('Kurikulum yang sedang aktif digunakan')
                             ->default(true),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Struktur SKS')
-                    ->description('Distribusi SKS berdasarkan tipe mata kuliah sesuai OBE 2025')
+                Forms\Components\Section::make('Struktur SKS (Sederhana)')
+                    ->description('Distribusi SKS sesuai kebijakan DIKTI & OBE – target total umumnya 144 SKS untuk S1')
                     ->schema([
                         Forms\Components\TextInput::make('total_credits')
                             ->label('Total SKS')
-                            ->helperText('Total SKS yang harus ditempuh untuk lulus')
+                            ->helperText('Total SKS kelulusan (standar: 145 SKS)')
                             ->required()
                             ->numeric()
                             ->minValue(1)
-                            ->default(144),
+                            ->default(145)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                $total = (int) $state;
+                                $mkwu = (int) ($get('mandatory_university_credits') ?? 20);
+                                $sisa = $total - $mkwu;
+
+                                // Auto-distribute: 80% Wajib Prodi, 20% Pilihan/Peminatan
+                                $wajibProdi = (int) ($sisa * 0.8);
+                                $pilihan = $sisa - $wajibProdi;
+
+                                $set('mandatory_program_credits', $wajibProdi);
+                                $set('elective_credits', $pilihan);
+                            }),
                         Forms\Components\TextInput::make('mandatory_university_credits')
-                            ->label('SKS Wajib Universitas')
-                            ->helperText('Total SKS Mata Kuliah Wajib Universitas (MKWU)')
+                            ->label('MKWU (Wajib Universitas)')
+                            ->helperText('SKS Wajib Universitas (standar: 20 SKS)')
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->default(8),
-                        Forms\Components\TextInput::make('mandatory_faculty_credits')
-                            ->label('SKS Wajib Fakultas')
-                            ->helperText('Total SKS Mata Kuliah Wajib Fakultas')
-                            ->required()
-                            ->numeric()
-                            ->minValue(0)
-                            ->default(12),
+                            ->default(20)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                $total = (int) ($get('total_credits') ?? 145);
+                                $mkwu = (int) $state;
+                                $sisa = $total - $mkwu;
+
+                                // Auto-distribute: 80% Wajib Prodi, 20% Pilihan/Peminatan
+                                $wajibProdi = (int) ($sisa * 0.8);
+                                $pilihan = $sisa - $wajibProdi;
+
+                                $set('mandatory_program_credits', $wajibProdi);
+                                $set('elective_credits', $pilihan);
+                            }),
+                        Forms\Components\Placeholder::make('calculated_info')
+                            ->label('Perhitungan Otomatis')
+                            ->content(function (callable $get) {
+                                $total = (int) ($get('total_credits') ?? 145);
+                                $mkwu = (int) ($get('mandatory_university_credits') ?? 20);
+                                $wajibProdi = (int) ($get('mandatory_program_credits') ?? 101);
+                                $pilihan = (int) ($get('elective_credits') ?? 24);
+                                $sum = $mkwu + $wajibProdi + $pilihan;
+
+                                $statusBadge = $sum === $total
+                                    ? '✅ Sesuai'
+                                    : '⚠️ Tidak sesuai (selisih: ' . abs($total - $sum) . ' SKS)';
+
+                                return new \Illuminate\Support\HtmlString("
+                                    <div class='space-y-2'>
+                                        <div class='text-sm'>
+                                            <strong>Sisa setelah MKWU:</strong> " . ($total - $mkwu) . " SKS
+                                        </div>
+                                        <div class='text-sm'>
+                                            <strong>Distribusi:</strong><br>
+                                            • MKWU: {$mkwu} SKS<br>
+                                            • Wajib Prodi: {$wajibProdi} SKS<br>
+                                            • Pilihan/Peminatan: {$pilihan} SKS<br>
+                                            <strong>Total: {$sum} SKS</strong> {$statusBadge}
+                                        </div>
+                                    </div>
+                                ");
+                            })
+                            ->columnSpanFull(),
                         Forms\Components\TextInput::make('mandatory_program_credits')
                             ->label('SKS Wajib Prodi')
-                            ->helperText('Total SKS Mata Kuliah Wajib Program Studi')
+                            ->helperText('Total SKS MK wajib Prodi (otomatis dihitung, dapat disesuaikan)')
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->default(110),
+                            ->default(101)
+                            ->live(onBlur: true),
                         Forms\Components\TextInput::make('elective_credits')
-                            ->label('SKS Pilihan')
-                            ->helperText('Total SKS Mata Kuliah Pilihan')
+                            ->label('SKS Pilihan/Peminatan')
+                            ->helperText('Total SKS MK pilihan termasuk peminatan (otomatis dihitung, dapat disesuaikan)')
                             ->required()
                             ->numeric()
                             ->minValue(0)
-                            ->default(8),
-                        Forms\Components\TextInput::make('concentration_credits')
-                            ->label('SKS Konsentrasi')
-                            ->helperText('Total SKS Mata Kuliah Konsentrasi/Peminatan')
-                            ->required()
-                            ->numeric()
-                            ->minValue(0)
-                            ->default(6),
+                            ->default(24)
+                            ->live(onBlur: true),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Detail Kurikulum')
+                Forms\Components\Section::make('Catatan Kurikulum')
                     ->schema([
                         Forms\Components\Textarea::make('description')
                             ->label('Deskripsi')
-                            ->placeholder('Tulis deskripsi singkat tentang kurikulum ini...')
-                            ->helperText('Deskripsi singkat dan tujuan kurikulum')
+                            ->placeholder('Tujuan kurikulum, acuan DIKTI/OBE, kebijakan internal singkat')
+                            ->helperText('Ringkas dan jelas – sesuai kebijakan DIKTI/OBE')
                             ->rows(3)
                             ->columnSpanFull(),
-                        Forms\Components\Textarea::make('structure')
-                            ->label('Struktur Kurikulum')
-                            ->placeholder('Format JSON: struktur mata kuliah per semester')
-                            ->helperText('Struktur lengkap kurikulum dalam format JSON (per semester)')
-                            ->rows(5)
-                            ->columnSpanFull(),
-                        Forms\Components\Textarea::make('concentration_list')
-                            ->label('Daftar Konsentrasi')
-                            ->placeholder('Format JSON: ["Konsentrasi 1", "Konsentrasi 2"]')
-                            ->helperText('Daftar konsentrasi/peminatan yang tersedia (JSON array)')
-                            ->rows(3)
-                            ->columnSpanFull(),
-                        Forms\Components\FileUpload::make('document_file')
-                            ->label('Dokumen Kurikulum')
-                            ->helperText('Upload dokumen kurikulum resmi (PDF, max 10MB)')
-                            ->acceptedFileTypes(['application/pdf'])
-                            ->disk('minio')
-                            ->directory('curriculum/documents')
-                            ->maxSize(10240),
+                        // Bidang-bidang detail disederhanakan untuk memudahkan adopsi
                     ]),
             ]);
     }
@@ -159,18 +167,16 @@ class CurriculumResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('code')->label('Kode')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('name')->label('Nama Kurikulum')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('studyProgram.name')->label('Program Studi')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('academic_year_start')->label('Tahun Mulai')->sortable(),
-                Tables\Columns\TextColumn::make('academic_year_end')->label('Tahun Berakhir')->sortable(),
                 Tables\Columns\IconColumn::make('is_active')->label('Aktif')->boolean(),
                 Tables\Columns\TextColumn::make('total_credits')->label('Total SKS')->sortable(),
-                Tables\Columns\TextColumn::make('created_at')->label('Dibuat')->dateTime('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')->label('Diubah')->dateTime('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')->label('Diubah')->since()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('study_program_id')->label('Program Studi')->relationship('studyProgram', 'name')->preload(),
+                Tables\Filters\TernaryFilter::make('is_active')->label('Status Aktif'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

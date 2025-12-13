@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             SubCourseLearningOutcomeSeeder::class, // Sub-CPMK & Indikator Kinerja
             PerformanceIndicatorSeeder::class,     // Performance Indicators
             RpsSeeder::class,                      // RPS
+            StudentSeeder::class,                  // Students
         ]);
     }
 }
