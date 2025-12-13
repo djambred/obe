@@ -46,24 +46,49 @@ class FacultyResource extends Resource
                     ->helperText('Nama lengkap fakultas')
                     ->required()
                     ->maxLength(255),
-                Forms\Components\Textarea::make('vision')
-                    ->label('Visi')
-                    ->placeholder('Tulis visi fakultas yang sejalan dengan visi universitas...')
-                    ->helperText('Visi fakultas (turunan dari visi universitas)')
-                    ->rows(3)
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('mission')
-                    ->label('Misi')
-                    ->placeholder('Tulis misi fakultas (dalam format JSON array atau teks)...')
-                    ->helperText('Misi fakultas (turunan dari misi universitas)')
-                    ->rows(3)
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('objectives')
-                    ->label('Tujuan')
-                    ->placeholder('Tulis tujuan fakultas (dalam format JSON array atau teks)...')
-                    ->helperText('Tujuan fakultas (turunan dari tujuan universitas)')
-                    ->rows(3)
-                    ->columnSpanFull(),
+                Forms\Components\Section::make('Visi, Misi, dan Tujuan')
+                    ->description('Visi, misi, dan tujuan fakultas yang sejalan dengan universitas')
+                    ->schema([
+                        Forms\Components\Textarea::make('vision')
+                            ->label('Visi')
+                            ->placeholder('Tulis visi fakultas yang sejalan dengan visi universitas...')
+                            ->helperText('Visi fakultas (turunan dari visi universitas)')
+                            ->rows(3)
+                            ->required()
+                            ->columnSpanFull(),
+
+                        Forms\Components\Repeater::make('mission')
+                            ->label('Misi')
+                            ->simple(
+                                Forms\Components\Textarea::make('item')
+                                    ->label('Poin Misi')
+                                    ->placeholder('Tulis satu poin misi...')
+                                    ->rows(2)
+                                    ->required()
+                            )
+                            ->defaultItems(3)
+                            ->addActionLabel('Tambah Misi')
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['item'] ? substr($state['item'], 0, 50) . '...' : null)
+                            ->columnSpanFull(),
+
+                        Forms\Components\Repeater::make('objectives')
+                            ->label('Tujuan')
+                            ->simple(
+                                Forms\Components\Textarea::make('item')
+                                    ->label('Poin Tujuan')
+                                    ->placeholder('Tulis satu poin tujuan...')
+                                    ->rows(2)
+                                    ->required()
+                            )
+                            ->defaultItems(3)
+                            ->addActionLabel('Tambah Tujuan')
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['item'] ? substr($state['item'], 0, 50) . '...' : null)
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
                 Forms\Components\Textarea::make('description')
                     ->label('Deskripsi')
                     ->placeholder('Tulis deskripsi singkat tentang fakultas...')

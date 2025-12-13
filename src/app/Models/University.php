@@ -30,11 +30,78 @@ class University extends Model
     ];
 
     protected $casts = [
-        'mission' => 'array',
-        'objectives' => 'array',
         'accreditation_date' => 'date',
         'is_active' => 'boolean',
     ];
+
+    // Mutators untuk handle repeater simple format
+    public function setMissionAttribute($value)
+    {
+        if (is_array($value)) {
+            // Extract 'item' dari repeater simple format
+            $this->attributes['mission'] = json_encode(array_values(array_filter(array_map(function($item) {
+                return is_array($item) && isset($item['item']) ? $item['item'] : $item;
+            }, $value))));
+        } else {
+            $this->attributes['mission'] = $value;
+        }
+    }
+
+    public function getMissionAttribute($value)
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        // Jika sudah dalam format repeater simple (array of arrays dengan key 'item')
+        if (!empty($decoded) && is_array($decoded[0]) && isset($decoded[0]['item'])) {
+            return $decoded;
+        }
+
+        // Convert array string ke format repeater simple
+        return array_values(array_map(function($item) {
+            return is_string($item) ? $item : $item;
+        }, $decoded));
+    }
+
+    public function setObjectivesAttribute($value)
+    {
+        if (is_array($value)) {
+            // Extract 'item' dari repeater simple format
+            $this->attributes['objectives'] = json_encode(array_values(array_filter(array_map(function($item) {
+                return is_array($item) && isset($item['item']) ? $item['item'] : $item;
+            }, $value))));
+        } else {
+            $this->attributes['objectives'] = $value;
+        }
+    }
+
+    public function getObjectivesAttribute($value)
+    {
+        if (is_null($value)) {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        // Jika sudah dalam format repeater simple (array of arrays dengan key 'item')
+        if (!empty($decoded) && is_array($decoded[0]) && isset($decoded[0]['item'])) {
+            return $decoded;
+        }
+
+        // Convert array string ke format repeater simple
+        return array_values(array_map(function($item) {
+            return is_string($item) ? $item : $item;
+        }, $decoded));
+    }
 
     public function faculties(): HasMany
     {

@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\LecturerResource\Pages;
 use App\Models\Lecturer;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -127,13 +128,13 @@ class LecturerResource extends Resource
                             ->schema([
                                 Forms\Components\Section::make('Bidang Keahlian & Penelitian')
                                     ->schema([
-                                        Forms\Components\TagsInput::make('expertise_areas')
+                                        Forms\Components\TextInput::make('expertise_areas')
                                             ->label('Bidang Keahlian')
-                                            ->placeholder('Tambah bidang keahlian')
+                                            ->hint('Pisahkan dengan koma')
                                             ->columnSpanFull(),
-                                        Forms\Components\TagsInput::make('research_interests')
+                                        Forms\Components\TextInput::make('research_interests')
                                             ->label('Minat Penelitian')
-                                            ->placeholder('Tambah minat penelitian')
+                                            ->hint('Pisahkan dengan koma')
                                             ->columnSpanFull(),
                                         Forms\Components\Textarea::make('biography')
                                             ->label('Biografi')
@@ -153,9 +154,30 @@ class LecturerResource extends Resource
                                                 Forms\Components\Actions\Action::make('sync_sinta')
                                                     ->icon('heroicon-o-arrow-path')
                                                     ->label('Sync')
-                                                    ->action(function ($record) {
-                                                        if ($record) {
-                                                            $record->syncSintaProfile();
+                                                    ->color('warning')
+                                                    ->action(function (Lecturer $record) {
+                                                        try {
+                                                            if ($record && !empty($record->sinta_id)) {
+                                                                if ($record->syncSintaProfile()) {
+                                                                    Notification::make()
+                                                                        ->title('✅ SINTA Synced')
+                                                                        ->body("Score: {$record->sinta_score}")
+                                                                        ->success()
+                                                                        ->send();
+                                                                } else {
+                                                                    Notification::make()
+                                                                        ->title('⚠️ Sync Gagal')
+                                                                        ->body('Gagal fetch data dari SINTA')
+                                                                        ->warning()
+                                                                        ->send();
+                                                                }
+                                                            }
+                                                        } catch (\Exception $e) {
+                                                            Notification::make()
+                                                                ->title('❌ Error')
+                                                                ->body($e->getMessage())
+                                                                ->danger()
+                                                                ->send();
                                                         }
                                                     })
                                             ),
@@ -181,7 +203,7 @@ class LecturerResource extends Resource
                                     ])->columns(2),
                             ]),
 
-                        Forms\Components\Tabs\Tab::make('Google Scholar')
+                        Forms\Components\Tabs\Tab::make('Google Scholar Profile')
                             ->schema([
                                 Forms\Components\Section::make('Data Google Scholar')
                                     ->schema([
@@ -192,9 +214,30 @@ class LecturerResource extends Resource
                                                 Forms\Components\Actions\Action::make('sync_gs')
                                                     ->icon('heroicon-o-arrow-path')
                                                     ->label('Sync')
-                                                    ->action(function ($record) {
-                                                        if ($record) {
-                                                            $record->syncGoogleScholarProfile();
+                                                    ->color('warning')
+                                                    ->action(function (Lecturer $record) {
+                                                        try {
+                                                            if ($record && !empty($record->google_scholar_id)) {
+                                                                if ($record->syncGoogleScholarProfile()) {
+                                                                    Notification::make()
+                                                                        ->title('✅ Google Scholar Synced')
+                                                                        ->body("H-Index: {$record->h_index}")
+                                                                        ->success()
+                                                                        ->send();
+                                                                } else {
+                                                                    Notification::make()
+                                                                        ->title('⚠️ Sync Gagal')
+                                                                        ->body('Gagal fetch data dari Google Scholar')
+                                                                        ->warning()
+                                                                        ->send();
+                                                                }
+                                                            }
+                                                        } catch (\Exception $e) {
+                                                            Notification::make()
+                                                                ->title('❌ Error')
+                                                                ->body($e->getMessage())
+                                                                ->danger()
+                                                                ->send();
                                                         }
                                                     })
                                             ),
@@ -215,6 +258,114 @@ class LecturerResource extends Resource
                                             ->numeric()
                                             ->readOnly(),
                                     ])->columns(2),
+                            ]),
+
+                        Forms\Components\Tabs\Tab::make('Jabatan Akademik')
+                            ->schema([
+                                Forms\Components\Section::make('Posisi Akademik')
+                                    ->description('Kelola posisi akademik di institusi')
+                                    ->schema([
+                                        Forms\Components\Repeater::make('academic_positions')
+                                            ->label('Posisi Akademik')
+                                            ->schema([
+                                                Forms\Components\Select::make('position')
+                                                    ->label('Posisi')
+                                                    ->options([
+                                                        'Rektor' => 'Rektor',
+                                                        'Wakil Rektor' => 'Wakil Rektor',
+                                                        'Dekan' => 'Dekan',
+                                                        'Wakil Dekan' => 'Wakil Dekan',
+                                                        'Ketua Program Studi' => 'Ketua Program Studi',
+                                                        'Sekretaris Program Studi' => 'Sekretaris Program Studi',
+                                                        'Koordinator Mata Kuliah' => 'Koordinator Mata Kuliah',
+                                                        'Kepala Laboratorium' => 'Kepala Laboratorium',
+                                                        'Ketua Tim Kurikulum' => 'Ketua Tim Kurikulum',
+                                                        'Lainnya' => 'Lainnya',
+                                                    ])
+                                                    ->searchable()
+                                                    ->required()
+                                                    ->columnSpan(2),
+                                                Forms\Components\TextInput::make('position_other')
+                                                    ->label('Posisi Lainnya (jika pilih Lainnya)')
+                                                    ->placeholder('Masukkan posisi akademik lainnya')
+                                                    ->columnSpan(1)
+                                                    ->visible(fn (Forms\Get $get) => $get('position') === 'Lainnya'),
+                                                Forms\Components\Select::make('unit')
+                                                    ->label('Unit / Organisasi')
+                                                    ->relationship('faculty', 'name')
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->columnSpan(2),
+                                                Forms\Components\DatePicker::make('start_date')
+                                                    ->label('Tanggal Mulai')
+                                                    ->columnSpan(1),
+                                                Forms\Components\DatePicker::make('end_date')
+                                                    ->label('Tanggal Berakhir')
+                                                    ->columnSpan(1),
+                                                Forms\Components\Textarea::make('description')
+                                                    ->label('Deskripsi / Tugas Pokok')
+                                                    ->placeholder('Tulis deskripsi tugas dan tanggung jawab...')
+                                                    ->rows(2)
+                                                    ->columnSpanFull(),
+                                            ])
+                                            ->columns(3)
+                                            ->collapsible()
+                                            ->itemLabel(fn (array $state): ?string => $state['position'] ? ($state['position'] === 'Lainnya' ? ($state['position_other'] ?? 'Posisi Lainnya') : $state['position']) : null)
+                                            ->columnSpanFull(),
+                                    ]),
+                            ]),
+
+                        Forms\Components\Tabs\Tab::make('Non Akademik')
+                            ->schema([
+                                Forms\Components\Section::make('Posisi Administrasi & SDM')
+                                    ->description('Kelola posisi administrasi, SDM, dan bidang lainnya')
+                                    ->schema([
+                                        Forms\Components\Repeater::make('administrative_positions')
+                                            ->label('Posisi Non Akademik')
+                                            ->schema([
+                                                Forms\Components\Select::make('category')
+                                                    ->label('Kategori')
+                                                    ->options([
+                                                        'SDM / Human Resources' => 'SDM / Human Resources',
+                                                        'Keuangan' => 'Keuangan',
+                                                        'Administrasi' => 'Administrasi',
+                                                        'IT / Sistem Informasi' => 'IT / Sistem Informasi',
+                                                        'Perpustakaan' => 'Perpustakaan',
+                                                        'Laboratorium' => 'Laboratorium',
+                                                        'Rumah Sakit / Klinik' => 'Rumah Sakit / Klinik',
+                                                        'Sarana & Prasarana' => 'Sarana & Prasarana',
+                                                        'Lembaga / Unit Khusus' => 'Lembaga / Unit Khusus',
+                                                        'Lainnya' => 'Lainnya',
+                                                    ])
+                                                    ->searchable()
+                                                    ->required()
+                                                    ->columnSpan(2),
+                                                Forms\Components\TextInput::make('position')
+                                                    ->label('Jabatan / Posisi')
+                                                    ->placeholder('Contoh: Kepala SDM, Bendahara, Admin Database, dll')
+                                                    ->required()
+                                                    ->columnSpan(1),
+                                                Forms\Components\TextInput::make('unit')
+                                                    ->label('Unit / Departemen')
+                                                    ->placeholder('Contoh: Bagian SDM, Direktorat Keuangan, dll')
+                                                    ->columnSpan(2),
+                                                Forms\Components\DatePicker::make('start_date')
+                                                    ->label('Tanggal Mulai')
+                                                    ->columnSpan(1),
+                                                Forms\Components\DatePicker::make('end_date')
+                                                    ->label('Tanggal Berakhir')
+                                                    ->columnSpan(1),
+                                                Forms\Components\Textarea::make('description')
+                                                    ->label('Deskripsi / Tugas Pokok')
+                                                    ->placeholder('Tulis deskripsi tugas dan tanggung jawab...')
+                                                    ->rows(2)
+                                                    ->columnSpanFull(),
+                                            ])
+                                            ->columns(3)
+                                            ->collapsible()
+                                            ->itemLabel(fn (array $state): ?string => ($state['position'] ?? '') . ($state['unit'] ? ' - ' . $state['unit'] : ''))
+                                            ->columnSpanFull(),
+                                    ]),
                             ]),
                     ])->columnSpanFull(),
 
@@ -238,26 +389,32 @@ class LecturerResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama')
+                    ->wrap()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('faculty.name')
                     ->label('Fakultas')
+                    ->wrap()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('studyProgram.name')
                     ->label('Prodi')
+                    ->wrap()
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('academic_rank')
                     ->label('Jabatan Akademik')
+                    ->wrap()
                     ->badge(),
                 Tables\Columns\TextColumn::make('sinta_score')
                     ->label('SINTA Score')
+                    ->wrap()
                     ->numeric()
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('h_index')
                     ->label('H-Index')
+                    ->wrap()
                     ->numeric()
                     ->sortable()
                     ->toggleable(),
@@ -293,10 +450,62 @@ class LecturerResource extends Resource
                 Tables\Actions\Action::make('sync_profile')
                     ->label('Sync Profile')
                     ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
                     ->action(function (Lecturer $record) {
-                        $record->syncSintaProfile();
-                        $record->syncGoogleScholarProfile();
-                    }),
+                        try {
+                            $sintaSuccess = false;
+                            $gsSuccess = false;
+                            $messages = [];
+
+                            if (!empty($record->sinta_id)) {
+                                if ($record->syncSintaProfile()) {
+                                    $sintaSuccess = true;
+                                    $messages[] = "SINTA: Score {$record->sinta_score}";
+                                } else {
+                                    $messages[] = "SINTA: Gagal disinkronisasi";
+                                }
+                            }
+
+                            if (!empty($record->google_scholar_id)) {
+                                if ($record->syncGoogleScholarProfile()) {
+                                    $gsSuccess = true;
+                                    $messages[] = "Google Scholar: H-Index {$record->h_index}";
+                                } else {
+                                    $messages[] = "Google Scholar: Gagal disinkronisasi";
+                                }
+                            }
+
+                            if ($sintaSuccess || $gsSuccess) {
+                                Notification::make()
+                                    ->title('✅ Sinkronisasi Berhasil')
+                                    ->body(implode(', ', $messages))
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('⚠️ Sinkronisasi Gagal')
+                                    ->body('Pastikan SINTA ID atau Google Scholar ID sudah diisi.')
+                                    ->warning()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('❌ Error')
+                                ->body('Error: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Sinkronisasi Profile')
+                    ->modalSubheading('Sinkronisasi data SINTA dan Google Scholar (proses 2-5 detik)')
+                    ->modalButton('Ya, Sinkronisasi'),
+                Tables\Actions\Action::make('view_profile')
+                    ->label('View Profile')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (Lecturer $record) => route('lecturer.show', $record))
+                    ->openUrlInNewTab(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

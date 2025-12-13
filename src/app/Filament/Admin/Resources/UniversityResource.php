@@ -57,34 +57,48 @@ class UniversityResource extends Resource
                     ])->columns(2),
 
                 Forms\Components\Section::make('Visi, Misi, dan Tujuan')
+                    ->description('Visi, misi, dan tujuan universitas sebagai landasan institusi')
                     ->schema([
                         Forms\Components\Textarea::make('vision')
                             ->label('Visi')
                             ->placeholder('Tulis visi universitas...')
                             ->helperText('Pernyataan visi universitas untuk masa depan')
                             ->required()
-                            ->rows(3),
+                            ->rows(3)
+                            ->columnSpanFull(),
+
                         Forms\Components\Repeater::make('mission')
                             ->label('Misi')
-                            ->helperText('Tambahkan satu atau lebih pernyataan misi')
                             ->simple(
                                 Forms\Components\Textarea::make('item')
-                                    ->label('Misi')
-                                    ->placeholder('Tulis pernyataan misi...')
+                                    ->label('Poin Misi')
+                                    ->placeholder('Tulis satu poin misi...')
+                                    ->rows(2)
                                     ->required()
                             )
+                            ->defaultItems(3)
+                            ->addActionLabel('Tambah Misi')
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['item'] ? substr($state['item'], 0, 50) . '...' : null)
                             ->columnSpanFull(),
+
                         Forms\Components\Repeater::make('objectives')
                             ->label('Tujuan')
-                            ->helperText('Tambahkan tujuan-tujuan strategis universitas')
                             ->simple(
                                 Forms\Components\Textarea::make('item')
-                                    ->label('Tujuan')
-                                    ->placeholder('Tulis tujuan strategis...')
+                                    ->label('Poin Tujuan')
+                                    ->placeholder('Tulis satu poin tujuan...')
+                                    ->rows(2)
                                     ->required()
                             )
+                            ->defaultItems(3)
+                            ->addActionLabel('Tambah Tujuan')
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['item'] ? substr($state['item'], 0, 50) . '...' : null)
                             ->columnSpanFull(),
-                    ])->columns(1),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
 
                 Forms\Components\Section::make('Kontak & Informasi')
                     ->schema([

@@ -59,24 +59,49 @@ class StudyProgramResource extends Resource
                     ])
                     ->helperText('Pilih jenjang pendidikan program studi')
                     ->required(),
-                Forms\Components\Textarea::make('vision')
-                    ->label('Visi')
-                    ->placeholder('Tulis visi program studi yang sejalan dengan visi fakultas...')
-                    ->helperText('Visi program studi (turunan dari visi fakultas)')
-                    ->rows(3)
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('mission')
-                    ->label('Misi')
-                    ->placeholder('Tulis misi program studi (dalam format JSON array atau teks)...')
-                    ->helperText('Misi program studi (turunan dari misi fakultas)')
-                    ->rows(3)
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('objectives')
-                    ->label('Tujuan')
-                    ->placeholder('Tulis tujuan program studi (dalam format JSON array atau teks)...')
-                    ->helperText('Tujuan program studi (turunan dari tujuan fakultas)')
-                    ->rows(3)
-                    ->columnSpanFull(),
+                Forms\Components\Section::make('Visi, Misi, dan Tujuan')
+                    ->description('Visi, misi, dan tujuan program studi yang sejalan dengan fakultas')
+                    ->schema([
+                        Forms\Components\Textarea::make('vision')
+                            ->label('Visi')
+                            ->placeholder('Tulis visi program studi yang sejalan dengan visi fakultas...')
+                            ->helperText('Visi program studi (turunan dari visi fakultas)')
+                            ->rows(3)
+                            ->required()
+                            ->columnSpanFull(),
+
+                        Forms\Components\Repeater::make('mission')
+                            ->label('Misi')
+                            ->simple(
+                                Forms\Components\Textarea::make('item')
+                                    ->label('Poin Misi')
+                                    ->placeholder('Tulis satu poin misi...')
+                                    ->rows(2)
+                                    ->required()
+                            )
+                            ->defaultItems(3)
+                            ->addActionLabel('Tambah Misi')
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['item'] ? substr($state['item'], 0, 50) . '...' : null)
+                            ->columnSpanFull(),
+
+                        Forms\Components\Repeater::make('objectives')
+                            ->label('Tujuan')
+                            ->simple(
+                                Forms\Components\Textarea::make('item')
+                                    ->label('Poin Tujuan')
+                                    ->placeholder('Tulis satu poin tujuan...')
+                                    ->rows(2)
+                                    ->required()
+                            )
+                            ->defaultItems(3)
+                            ->addActionLabel('Tambah Tujuan')
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['item'] ? substr($state['item'], 0, 50) . '...' : null)
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
+                    ->collapsed(),
                 Forms\Components\Textarea::make('description')
                     ->label('Deskripsi')
                     ->placeholder('Tulis deskripsi singkat tentang program studi...')

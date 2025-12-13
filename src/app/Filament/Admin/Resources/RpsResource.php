@@ -282,38 +282,116 @@ class RpsResource extends Resource
                                             ->hidden(fn (Forms\Get $get) => !empty($get('course_id'))),
                                     ]),
 
+                                Forms\Components\Section::make('📊 Matrix Kontribusi CPMK → CPL')
+                                    ->description('Menunjukkan kontribusi setiap CPMK terhadap CPL (read-only)')
+                                    ->schema([
+                                        Forms\Components\Placeholder::make('cpmk_cpl_matrix')
+                                            ->label('')
+                                            ->content(function (Forms\Get $get) {
+                                                $courseId = $get('course_id');
+                                                if (!$courseId) {
+                                                    return 'Pilih mata kuliah terlebih dahulu untuk melihat matrix kontribusi.';
+                                                }
+
+                                                $cpmks = \App\Models\CourseLearningOutcome::where('course_id', $courseId)
+                                                    ->with(['programLearningOutcomes' => function($q) {
+                                                        $q->orderBy('code');
+                                                    }])
+                                                    ->orderBy('code')
+                                                    ->get();
+
+                                                if ($cpmks->isEmpty()) {
+                                                    return 'Tidak ada CPMK untuk mata kuliah ini.';
+                                                }
+
+                                                // Build HTML table
+                                                $html = '<div class="overflow-x-auto"><table class="w-full text-sm border-collapse border border-gray-300">';
+
+                                                // Get unique CPLs
+                                                $cpls = collect();
+                                                foreach ($cpmks as $cpmk) {
+                                                    $cpls = $cpls->merge($cpmk->programLearningOutcomes);
+                                                }
+                                                $cpls = $cpls->unique('id')->sortBy('code');
+
+                                                // Header
+                                                $html .= '<thead><tr><th class="border border-gray-300 px-3 py-2 bg-blue-100 text-left font-semibold">CPMK</th>';
+                                                foreach ($cpls as $cpl) {
+                                                    $html .= '<th class="border border-gray-300 px-3 py-2 bg-blue-100 text-center font-semibold">' . htmlspecialchars($cpl->code) . '</th>';
+                                                }
+                                                $html .= '</tr></thead>';
+
+                                                // Body
+                                                $html .= '<tbody>';
+                                                foreach ($cpmks as $cpmk) {
+                                                    $html .= '<tr><td class="border border-gray-300 px-3 py-2 font-medium bg-blue-50">' . htmlspecialchars($cpmk->code) . '</td>';
+
+                                                    foreach ($cpls as $cpl) {
+                                                        $pivot = $cpmk->programLearningOutcomes->firstWhere('id', $cpl->id);
+                                                        if ($pivot) {
+                                                            $level = $pivot->pivot->contribution_level_numeric ?? 0;
+                                                            $weight = $pivot->pivot->weight_percentage ?? 0;
+                                                            $bgColor = $level >= 4 ? 'bg-green-100' : ($level >= 3 ? 'bg-yellow-100' : 'bg-gray-100');
+                                                            $textColor = $level >= 4 ? 'text-green-800 font-bold' : ($level >= 3 ? 'text-yellow-800' : 'text-gray-600');
+                                                            $html .= '<td class="border border-gray-300 px-3 py-2 text-center ' . $bgColor . ' ' . $textColor . '"><div>Level: ' . $level . '</div><div class="text-xs">' . number_format($weight, 0) . '%</div></td>';
+                                                        } else {
+                                                            $html .= '<td class="border border-gray-300 px-3 py-2 text-center bg-gray-50 text-gray-400">-</td>';
+                                                        }
+                                                    }
+                                                    $html .= '</tr>';
+                                                }
+                                                $html .= '</tbody></table></div>';
+                                                $html .= '<p class="mt-3 text-xs text-gray-600"><strong>Keterangan:</strong> Warna hijau (Level 4-5) = Kontribusi tinggi, Warna kuning (Level 3) = Kontribusi sedang, Warna abu (Level 0-2) = Kontribusi rendah</p>';
+
+                                                return new \Illuminate\Support\HtmlString($html);
+                                            })
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->collapsible()
+                                    ->collapsed(),
+
                                 Forms\Components\Section::make('Pemetaan CPL (Capaian Pembelajaran Lulusan)')
-                                    ->description('Pilih CPL yang dipetakan dari mata kuliah ini')
+                                    ->description('CPL difilter berdasarkan Profil Lulusan yang dipilih')
                                     ->schema([
                                         Forms\Components\CheckboxList::make('plo_mapped')
                                             ->label('CPL Terpetakan')
-                                            ->options(function () {
-                                                return \App\Models\ProgramLearningOutcome::orderBy('code')
+                                            ->options(function (Forms\Get $get) {
+                                                $graduateProfileId = $get('graduate_profile_id');
+                                                if (!$graduateProfileId) {
+                                                    return [];
+                                                }
+                                                return \App\Models\ProgramLearningOutcome::where('graduate_profile_id', $graduateProfileId)
+                                                    ->where('is_active', true)
+                                                    ->orderBy('code')
                                                     ->get()
                                                     ->mapWithKeys(function ($plo) {
-                                                        return [$plo->code => "{$plo->code}: {$plo->description}"];
+                                                        return [$plo->code => "{$plo->code}: {$plo->competency_description}"];
                                                     })
                                                     ->toArray();
                                             })
-                                            ->descriptions(function () {
-                                                return \App\Models\ProgramLearningOutcome::orderBy('code')
+                                            ->descriptions(function (Forms\Get $get) {
+                                                $graduateProfileId = $get('graduate_profile_id');
+                                                if (!$graduateProfileId) {
+                                                    return [];
+                                                }
+                                                return \App\Models\ProgramLearningOutcome::where('graduate_profile_id', $graduateProfileId)
+                                                    ->where('is_active', true)
+                                                    ->with('indicators')
+                                                    ->orderBy('code')
                                                     ->get()
                                                     ->mapWithKeys(function ($plo) {
-                                                        $category = match($plo->category) {
-                                                            'Sikap' => '👤 Sikap',
-                                                            'Pengetahuan' => '📚 Pengetahuan',
-                                                            'Keterampilan Umum' => '🔧 Keterampilan Umum',
-                                                            'Keterampilan Khusus' => '💻 Keterampilan Khusus',
-                                                            default => $plo->category
-                                                        };
-                                                        return [$plo->code => "{$category} | KKNI Level: {$plo->kkni_level}"];
+                                                        $indicatorCount = $plo->indicators->count();
+                                                        $targetLabel = $plo->target_percentage ? "Target: {$plo->target_percentage}%" : "Target: -";
+                                                        $coreLabel = $plo->is_core ? '⭐ Kompetensi Inti' : '📌 Kompetensi Pendukung';
+                                                        return [$plo->code => "{$coreLabel} | {$indicatorCount} Indikator | {$targetLabel}"];
                                                     })
                                                     ->toArray();
                                             })
                                             ->columns(2)
                                             ->searchable()
                                             ->bulkToggleable()
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->helperText('Pilih Profil Lulusan terlebih dahulu untuk menampilkan CPL yang sesuai'),
                                     ]),
 
                                 Forms\Components\Section::make('Bahan Kajian')
@@ -348,106 +426,26 @@ class RpsResource extends Resource
                         Forms\Components\Tabs\Tab::make('📅 Rencana Mingguan')
                             ->schema([
                                 Forms\Components\Section::make('Rencana Pembelajaran 16 Minggu')
-                                    ->description('Isi rencana pembelajaran untuk setiap minggu (minggu 8 = UTS, minggu 17 = UAS)')
+                                    ->description('Kelola rencana pembelajaran mingguan melalui tab "Pemetaan Mingguan" di bawah')
                                     ->schema([
-                                        Forms\Components\Repeater::make('weekly_plan')
-                                            ->label('Pertemuan Mingguan')
-                                            ->schema([
-                                                Forms\Components\TextInput::make('week')
-                                                    ->label('Minggu Ke-')
-                                                    ->numeric()
-                                                    ->minValue(1)
-                                                    ->maxValue(17)
-                                                    ->default(fn ($get) => count($get('../../weekly_plan') ?? []) + 1)
-                                                    ->required()
-                                                    ->columnSpan(1),
-                                                Forms\Components\Select::make('sub_cpmk')
-                                                    ->label('Sub-CPMK')
-                                                    ->multiple()
-                                                    ->options(function (Forms\Get $get) {
-                                                        $courseId = $get('../../course_id');
-                                                        if (!$courseId) {
-                                                            return [];
-                                                        }
-                                                        return \App\Models\SubCourseLearningOutcome::whereHas('courseLearningOutcome', function ($query) use ($courseId) {
-                                                            $query->where('course_id', $courseId);
-                                                        })
-                                                        ->orderBy('code')
-                                                        ->get()
-                                                        ->mapWithKeys(function ($subClo) {
-                                                            return [$subClo->code => "{$subClo->code}: " . substr($subClo->description, 0, 60) . "..."];
-                                                        })
-                                                        ->toArray();
-                                                    })
-                                                    ->searchable()
-                                                    ->preload()
-                                                    ->columnSpan(2),
-                                                Forms\Components\Select::make('indicators')
-                                                    ->label('Indikator Penilaian')
-                                                    ->multiple()
-                                                    ->options(function (Forms\Get $get) {
-                                                        $subCpmkCodes = $get('sub_cpmk');
-                                                        if (!$subCpmkCodes || !is_array($subCpmkCodes)) {
-                                                            return [];
-                                                        }
-                                                        $subCpmkIds = \App\Models\SubCourseLearningOutcome::whereIn('code', $subCpmkCodes)->pluck('id');
-                                                        return \App\Models\PerformanceIndicator::whereIn('sub_course_learning_outcome_id', $subCpmkIds)
-                                                            ->orderBy('code')
-                                                            ->get()
-                                                            ->mapWithKeys(function ($indicator) {
-                                                                return [$indicator->code => "{$indicator->code} ({$indicator->weight}%): " . substr($indicator->description, 0, 50)];
-                                                            })
-                                                            ->toArray();
-                                                    })
-                                                    ->searchable()
-                                                    ->preload()
-                                                    ->columnSpan(3),
-                                                Forms\Components\TagsInput::make('topics')
-                                                    ->label('Topik/Materi Pembelajaran')
-                                                    ->placeholder('Tekan Enter setelah setiap topik')
-                                                    ->separator(',')
-                                                    ->required()
-                                                    ->columnSpan(3),
-                                                Forms\Components\TextInput::make('learning_form')
-                                                    ->label('Bentuk Pembelajaran')
-                                                    ->placeholder('Contoh: Perkuliahan, Praktikum')
-                                                    ->default('Perkuliahan')
-                                                    ->columnSpan(2),
-                                                Forms\Components\TagsInput::make('methods')
-                                                    ->label('Metode Pembelajaran')
-                                                    ->placeholder('Contoh: Ceramah, Diskusi, Praktik')
-                                                    ->separator(',')
-                                                    ->columnSpan(2),
-                                                Forms\Components\TextInput::make('student_tasks')
-                                                    ->label('Rencana Tugas Mahasiswa')
-                                                    ->placeholder('Tugas yang harus dikerjakan mahasiswa')
-                                                    ->columnSpan(2),
-                                                Forms\Components\TagsInput::make('assessment')
-                                                    ->label('Bentuk Penilaian')
-                                                    ->placeholder('Contoh: Quiz, Tugas, Presentasi')
-                                                    ->separator(',')
-                                                    ->columnSpan(2),
-                                                Forms\Components\TextInput::make('weight')
-                                                    ->label('Bobot (%)')
-                                                    ->numeric()
-                                                    ->minValue(0)
-                                                    ->maxValue(100)
-                                                    ->suffix('%')
-                                                    ->default(0)
-                                                    ->columnSpan(1),
-                                                Forms\Components\TextInput::make('duration')
-                                                    ->label('Durasi (menit)')
-                                                    ->numeric()
-                                                    ->default(150)
-                                                    ->suffix('menit')
-                                                    ->columnSpan(1),
-                                            ])
-                                            ->columns(6)
-                                            ->defaultItems(16)
-                                            ->reorderable()
-                                            ->collapsible()
-                                            ->itemLabel(fn (array $state): ?string => $state['week'] ? "Minggu {$state['week']}" : null)
-                                            ->addActionLabel('Tambah Pertemuan')
+                                        Forms\Components\Placeholder::make('weekly_plan_info')
+                                            ->label('📋 Informasi Rencana Mingguan')
+                                            ->content(new \Illuminate\Support\HtmlString(
+                                                '<div class="space-y-3">' .
+                                                '<p><strong>✅ Cara menggunakan:</strong></p>' .
+                                                '<ol class="list-decimal list-inside space-y-1 ml-2">' .
+                                                '<li>Simpan RPS terlebih dahulu di tab "Identitas RPS"</li>' .
+                                                '<li>Pilih "Pemetaan Mingguan" dari menu relasi yang muncul di bawah form</li>' .
+                                                '<li>Klik "Buat" untuk menambahkan minggu pembelajaran baru</li>' .
+                                                '<li>Isi CPL, CPMK, Sub-CPMK, dan indikator penilaian untuk setiap minggu</li>' .
+                                                '<li>Pastikan total bobot semua komponen = 100% per minggu</li>' .
+                                                '<li>Gunakan tombol "Generate Semua Minggu" untuk auto-generate 16 minggu dengan pola default</li>' .
+                                                '</ol>' .
+                                                '</div>' .
+                                                '<div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">' .
+                                                '<p class="text-sm text-blue-800"><strong>💡 Tips:</strong> Minggu 8 biasanya untuk UTS review, minggu 16 untuk UAS review. Gunakan pola pemboboran yang konsisten.</p>' .
+                                                '</div>'
+                                            ))
                                             ->columnSpanFull(),
                                     ]),
                             ]),
@@ -554,61 +552,178 @@ class RpsResource extends Resource
                                     ]),
                             ]),
 
-                        // Tab 6: Status & Persetujuan
-                        Forms\Components\Tabs\Tab::make('✅ Status & Approval')
+                        // Tab 6: Status & Approval Workflow
+                        Forms\Components\Tabs\Tab::make('✅ Workflow & Persetujuan')
                             ->schema([
-                                Forms\Components\Section::make('Status Dokumen')
+                                Forms\Components\Section::make('Status RPS & Workflow')
+                                    ->description('Kelola status dan workflow persetujuan RPS')
                                     ->schema([
+                                        Forms\Components\Placeholder::make('approval_status_display')
+                                            ->label('Status Terkini')
+                                            ->content(function (Forms\Get $get) {
+                                                $status = $get('status') ?? 'Draft';
+
+                                                $statusColors = [
+                                                    'Draft' => 'gray',
+                                                    'Submitted' => 'blue',
+                                                    'Reviewed' => 'yellow',
+                                                    'Approved' => 'green',
+                                                    'Rejected' => 'red',
+                                                    'Revision' => 'orange',
+                                                ];
+
+                                                $statusIcons = [
+                                                    'Draft' => '📝',
+                                                    'Submitted' => '📤',
+                                                    'Reviewed' => '👁️',
+                                                    'Approved' => '✅',
+                                                    'Rejected' => '❌',
+                                                    'Revision' => '🔄',
+                                                ];
+
+                                                $color = $statusColors[$status] ?? 'gray';
+                                                $icon = $statusIcons[$status] ?? '📄';
+
+                                                return new \Illuminate\Support\HtmlString(
+                                                    '<div class="flex items-center gap-3">' .
+                                                    '<div class="text-3xl">' . $icon . '</div>' .
+                                                    '<div class="flex-1">' .
+                                                    '<p class="text-sm text-gray-600">Status Saat Ini</p>' .
+                                                    '<p class="text-xl font-bold text-' . $color . '-700">' . ucfirst($status) . '</p>' .
+                                                    '</div>' .
+                                                    '</div>'
+                                                );
+                                            })
+                                            ->columnSpanFull(),
+
                                         Forms\Components\Select::make('status')
-                                            ->label('Status RPS')
+                                            ->label('Ubah Status')
                                             ->options([
-                                                'Draft' => 'Draft',
-                                                'Submitted' => 'Submitted',
-                                                'Reviewed' => 'Reviewed',
-                                                'Approved' => 'Approved',
-                                                'Rejected' => 'Rejected',
-                                                'Revision' => 'Revision',
+                                                'Draft' => '📝 Draft - Sedang dikerjakan',
+                                                'Submitted' => '📤 Submitted - Siap untuk review',
+                                                'Reviewed' => '👁️ Reviewed - Sedang dalam review',
+                                                'Approved' => '✅ Approved - Disetujui',
+                                                'Rejected' => '❌ Rejected - Ditolak',
+                                                'Revision' => '🔄 Revision - Perlu revisi',
                                             ])
                                             ->default('Draft')
                                             ->required()
-                                            ->columnSpan(1),
-                                        Forms\Components\Toggle::make('is_active')
-                                            ->label('Aktif')
-                                            ->default(true)
-                                            ->columnSpan(1),
-                                    ])->columns(2),
+                                            ->columnSpan(2),
 
-                                Forms\Components\Section::make('Review')
+                                        Forms\Components\Toggle::make('is_active')
+                                            ->label('Aktif / Non-aktif')
+                                            ->default(true)
+                                            ->helperText('Aktif = RPS dapat digunakan dalam pembelajaran')
+                                            ->columnSpan(1),
+                                    ])->columns(3),
+
+                                Forms\Components\Section::make('Review Dosen Pengampu / Koordinator')
+                                    ->description('Dosen pengampu melakukan review terhadap RPS')
                                     ->schema([
                                         Forms\Components\Select::make('reviewed_by')
                                             ->label('Direview oleh')
                                             ->relationship('reviewer', 'name')
                                             ->searchable()
-                                            ->preload(),
+                                            ->preload()
+                                            ->columnSpan(2),
+
                                         Forms\Components\DateTimePicker::make('reviewed_at')
-                                            ->label('Tanggal Review'),
+                                            ->label('Tanggal Review')
+                                            ->columnSpan(1),
+
                                         Forms\Components\Textarea::make('review_notes')
                                             ->label('Catatan Review')
+                                            ->placeholder('Masukkan komentar atau saran untuk perbaikan...')
                                             ->rows(3)
                                             ->columnSpanFull(),
-                                    ])->columns(2),
+                                    ])->columns(3)->collapsible(),
 
-                                Forms\Components\Section::make('Approval')
+                                Forms\Components\Section::make('Persetujuan Kaprodi')
+                                    ->description('Ketua Program Studi memberikan persetujuan final')
                                     ->schema([
-                                        Forms\Components\TextInput::make('approved_by')
-                                            ->label('Disetujui oleh')
-                                            ->placeholder('Nama Ketua Program Studi'),
-                                        Forms\Components\DateTimePicker::make('approved_at')
-                                            ->label('Tanggal Persetujuan'),
-                                        Forms\Components\Textarea::make('approval_notes')
-                                            ->label('Catatan Persetujuan')
+                                        Forms\Components\TextInput::make('kaprodi_approver_name')
+                                            ->label('Disetujui oleh Kaprodi')
+                                            ->placeholder('Nama Ketua Program Studi')
+                                            ->helperText('Masukkan nama Ketua Program Studi yang memberikan persetujuan')
+                                            ->columnSpan(2),
+
+                                        Forms\Components\DateTimePicker::make('kaprodi_approved_at')
+                                            ->label('Tanggal Persetujuan Kaprodi')
+                                            ->columnSpan(1),
+
+                                        Forms\Components\Textarea::make('kaprodi_approval_notes')
+                                            ->label('Catatan Persetujuan Kaprodi')
+                                            ->placeholder('Catatan dari Kaprodi...')
                                             ->rows(3)
                                             ->columnSpanFull(),
-                                    ])->columns(2),
+                                    ])->columns(3)->collapsible(),
+
+                                Forms\Components\Section::make('Persetujuan Dekan')
+                                    ->description('Dekan memberikan persetujuan tertinggi')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('dean_approver_name')
+                                            ->label('Disetujui oleh Dekan')
+                                            ->placeholder('Nama Dekan')
+                                            ->helperText('Masukkan nama Dekan yang memberikan persetujuan final')
+                                            ->columnSpan(2),
+
+                                        Forms\Components\DateTimePicker::make('dean_approved_at')
+                                            ->label('Tanggal Persetujuan Dekan')
+                                            ->columnSpan(1),
+
+                                        Forms\Components\Textarea::make('dean_approval_notes')
+                                            ->label('Catatan Persetujuan Dekan')
+                                            ->placeholder('Catatan dari Dekan...')
+                                            ->rows(3)
+                                            ->columnSpanFull(),
+                                    ])->columns(3)->collapsible(),
+
+                                Forms\Components\Section::make('Timeline Persetujuan')
+                                    ->description('Ringkasan timeline persetujuan RPS')
+                                    ->schema([
+                                        Forms\Components\Placeholder::make('approval_timeline')
+                                            ->label('')
+                                            ->content(function (Forms\Get $get) {
+                                                $steps = [
+                                                    ['status' => 'Draft', 'icon' => '📝', 'label' => 'RPS Dibuat', 'date' => null],
+                                                    ['status' => 'Reviewed', 'icon' => '👁️', 'label' => 'Review Koordinator/Pengampu', 'date' => $get('reviewed_at')],
+                                                    ['status' => 'Reviewed', 'icon' => '✔️', 'label' => 'Persetujuan Kaprodi', 'date' => $get('kaprodi_approved_at')],
+                                                    ['status' => 'Approved', 'icon' => '✅', 'label' => 'Persetujuan Dekan', 'date' => $get('dean_approved_at')],
+                                                ];
+
+                                                $html = '<div class="space-y-3">';
+                                                $html .= '<div class="relative">';
+
+                                                foreach ($steps as $index => $step) {
+                                                    $hasDate = !empty($step['date']);
+                                                    $dateStr = $hasDate ? (new \DateTime($step['date']))->format('d M Y H:i') : 'Menunggu...';
+                                                    $statusClass = $hasDate ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600';
+
+                                                    $html .= '<div class="flex gap-4 mb-4">';
+                                                    $html .= '<div class="flex flex-col items-center">';
+                                                    $html .= '<div class="w-10 h-10 rounded-full ' . $statusClass . ' flex items-center justify-center text-lg font-bold">' . $step['icon'] . '</div>';
+                                                    if ($index < count($steps) - 1) {
+                                                        $html .= '<div class="w-1 h-12 bg-gray-300 my-2"></div>';
+                                                    }
+                                                    $html .= '</div>';
+                                                    $html .= '<div class="pt-2">';
+                                                    $html .= '<p class="font-semibold text-gray-900">' . $step['label'] . '</p>';
+                                                    $html .= '<p class="text-sm text-gray-600">' . $dateStr . '</p>';
+                                                    $html .= '</div>';
+                                                    $html .= '</div>';
+                                                }
+
+                                                $html .= '</div>';
+                                                $html .= '</div>';
+
+                                                return new \Illuminate\Support\HtmlString($html);
+                                            })
+                                            ->columnSpanFull(),
+                                    ]),
                             ]),
                     ])
                     ->columnSpanFull()
-                    ->persistTabInQueryString(),
+                    ->persistTabInQueryString()
             ]);
     }
 

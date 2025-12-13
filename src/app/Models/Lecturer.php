@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 
 class Lecturer extends Model
 {
@@ -45,6 +46,8 @@ class Lecturer extends Model
         'photo',
         'biography',
         'achievements',
+        'academic_positions',
+        'administrative_positions',
         'is_active',
         'last_profile_sync',
     ];
@@ -57,6 +60,8 @@ class Lecturer extends Model
         'sinta_data' => 'array',
         'google_scholar_data' => 'array',
         'achievements' => 'array',
+        'academic_positions' => 'array',
+        'administrative_positions' => 'array',
         'is_active' => 'boolean',
         'last_profile_sync' => 'datetime',
     ];
@@ -139,8 +144,75 @@ class Lecturer extends Model
      */
     public function syncSintaProfile(): bool
     {
-        // TODO: Implement SINTA API/scraping integration
-        return false;
+        if (empty($this->sinta_id)) {
+            return false;
+        }
+
+        try {
+            $client = new \GuzzleHttp\Client();
+            // SINTA domain moved to kemdiktisaintek.go.id with profile path
+            $sintaUrl = "https://sinta.kemdiktisaintek.go.id/authors/profile/{$this->sinta_id}";
+
+            $response = $client->get($sintaUrl, [
+                'timeout' => 10,
+                'headers' => [
+                    // SINTA blocks some default clients; spoofing browser UA helps
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129 Safari/537.36'
+                ],
+                'http_errors' => false,
+            ]);
+
+            if ($response->getStatusCode() !== 200) {
+                Log::warning("SINTA sync non-200 for lecturer {$this->id}: " . $response->getStatusCode());
+                return false;
+            }
+
+            $html = $response->getBody()->getContents();
+
+            // New layout: pr-num blocks contain metrics
+            // Order: SINTA Score Overall, SINTA Score 3Yr, Affil Score, Affil Score 3Yr
+            $data = [];
+            if (preg_match_all('/<div class="pr-num">\s*([\d.,]+)/i', $html, $matches) && !empty($matches[1])) {
+                $numbers = array_values(array_map(function ($value) {
+                    return (float) str_replace([','], '', $value);
+                }, $matches[1]));
+
+                $data['sinta_score'] = $numbers[0] ?? null;              // SINTA Score Overall
+                // $numbers[1] = SINTA Score 3Yr (optional, not stored)
+                $data['sinta_rank_national'] = $numbers[2] ?? null;      // Affil Score
+                $data['sinta_rank_affiliation'] = $numbers[3] ?? null;   // Affil Score 3Yr
+            }
+
+            // Extract h-index, i10-index, citations, dan article counts dari stat table
+            // Table format: <tr> <td>Citation</td> <td class="text-warning">0</td> <td class="text-success">45</td> </tr>
+            if (preg_match('/<tr[^>]*>.*?<td[^>]*>Citation<\/td>.*?<td[^>]*class="text-success"[^>]*>([\d.,]+)<\/td>/is', $html, $matches)) {
+                $data['total_citations'] = (int) str_replace([','], '', $matches[1]);
+            }
+            if (preg_match('/<tr[^>]*>.*?<td[^>]*>H-Index<\/td>.*?<td[^>]*class="text-success"[^>]*>([\d.,]+)<\/td>/is', $html, $matches)) {
+                $data['h_index'] = (int) str_replace([','], '', $matches[1]);
+            }
+            if (preg_match('/<tr[^>]*>.*?<td[^>]*>i10-Index<\/td>.*?<td[^>]*class="text-success"[^>]*>([\d.,]+)<\/td>/is', $html, $matches)) {
+                $data['i10_index'] = (int) str_replace([','], '', $matches[1]);
+            }
+
+            if (!empty(array_filter($data, fn ($v) => $v !== null))) {
+                $data['last_profile_sync'] = now();
+                $data['sinta_data'] = json_encode([
+                    'url' => $sintaUrl,
+                    'synced_at' => now()->toIso8601String(),
+                    'source' => 'SINTA'
+                ]);
+
+                $this->update(array_filter($data, fn ($v) => $v !== null));
+                return true;
+            }
+
+            Log::warning("SINTA sync parse failed for lecturer {$this->id}");
+            return false;
+        } catch (\Exception $e) {
+            Log::error("SINTA sync error for lecturer {$this->id}: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -148,8 +220,71 @@ class Lecturer extends Model
      */
     public function syncGoogleScholarProfile(): bool
     {
-        // TODO: Implement Google Scholar scraping
-        return false;
+        if (empty($this->google_scholar_id)) {
+            return false;
+        }
+
+        try {
+            $client = new \GuzzleHttp\Client();
+
+            // Google Scholar URL format
+            $url = "https://scholar.google.com/citations?hl=en&user={$this->google_scholar_id}";
+
+            $response = $client->get($url, [
+                'timeout' => 10,
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                ]
+            ]);
+
+            $html = $response->getBody()->getContents();
+
+            // Parse HTML untuk extract metrics
+            // Google Scholar structure biasanya:
+            // h-index: Citations / h-index
+            // i10-index: i10-index:
+            // citations: Citations
+
+            $data = [];
+
+            // Extract h-index
+            if (preg_match('/h-index:\s*(\d+)/i', $html, $matches)) {
+                $data['h_index'] = (int) $matches[1];
+            }
+
+            // Extract i10-index
+            if (preg_match('/i10-index:\s*(\d+)/i', $html, $matches)) {
+                $data['i10_index'] = (int) $matches[1];
+            }
+
+            // Extract citations
+            if (preg_match('/Citations:\s*(\d+)/i', $html, $matches)) {
+                $data['total_citations'] = (int) $matches[1];
+            }
+
+            // Count publications - biasanya ada table dengan publikasi
+            if (preg_match_all('/<tr.*?<\/tr>/is', $html, $tables)) {
+                // Hitung rows (roughly approximate publications)
+                $data['total_publications'] = count($tables[0]) - 1; // minus header
+            }
+
+            if (!empty($data)) {
+                $data['last_profile_sync'] = now();
+                $data['google_scholar_data'] = json_encode([
+                    'url' => $url,
+                    'synced_at' => now()->toIso8601String(),
+                    'source' => 'Google Scholar'
+                ]);
+
+                $this->update($data);
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            Log::error("Google Scholar sync error for lecturer {$this->id}: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -162,5 +297,63 @@ class Lecturer extends Model
             ->wherePivot('semester', $semester)
             ->wherePivot('is_active', true)
             ->sum('course_lecturer.workload_sks');
+    }
+
+    /**
+     * Mutator for expertise_areas: convert comma-separated string to array
+     */
+    public function setExpertiseAreasAttribute($value): void
+    {
+        if (is_string($value)) {
+            $this->attributes['expertise_areas'] = json_encode(
+                array_map('trim', explode(',', $value))
+            );
+        } else {
+            $this->attributes['expertise_areas'] = json_encode($value ?? []);
+        }
+    }
+
+    /**
+     * Mutator for research_interests: convert comma-separated string to array
+     */
+    public function setResearchInterestsAttribute($value): void
+    {
+        if (is_string($value)) {
+            $this->attributes['research_interests'] = json_encode(
+                array_map('trim', explode(',', $value))
+            );
+        } else {
+            $this->attributes['research_interests'] = json_encode($value ?? []);
+        }
+    }
+
+    /**
+     * Accessor for expertise_areas: convert array to comma-separated string for display
+     */
+    public function getExpertiseAreasAttribute($value): string|array
+    {
+        if (!$value) {
+            return [];
+        }
+        $decoded = json_decode($value, true);
+        if (is_array($decoded) && count($decoded) > 0) {
+            return implode(', ', $decoded);
+        }
+        return $decoded ?? [];
+    }
+
+    /**
+     * Accessor for research_interests: convert array to comma-separated string for display
+     */
+    public function getResearchInterestsAttribute($value): string|array
+    {
+        if (!$value) {
+            return [];
+        }
+        $decoded = json_decode($value, true);
+        if (is_array($decoded) && count($decoded) > 0) {
+            return implode(', ', $decoded);
+        }
+        return $decoded ?? [];
     }
 }

@@ -52,6 +52,12 @@ class Rps extends Model
         'approved_by',
         'approved_at',
         'approval_notes',
+        'kaprodi_approver_name',
+        'kaprodi_approved_at',
+        'kaprodi_approval_notes',
+        'dean_approver_name',
+        'dean_approved_at',
+        'dean_approval_notes',
         'is_active',
     ];
 
@@ -66,6 +72,8 @@ class Rps extends Model
         'supporting_references' => 'array',
         'reviewed_at' => 'datetime',
         'approved_at' => 'datetime',
+        'kaprodi_approved_at' => 'datetime',
+        'dean_approved_at' => 'datetime',
         'is_active' => 'boolean',
     ];
 

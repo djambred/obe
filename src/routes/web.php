@@ -22,6 +22,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Lecturer Profile Page
+Route::get('/lecturer/{lecturer}', [\App\Http\Controllers\LecturerController::class, 'show'])
+    ->name('lecturer.show')
+    ->middleware(['auth']);
+
 // RPS PDF Preview (inline)
 Route::get('/rps/{rps}/preview-pdf', [\App\Http\Controllers\RpsController::class, 'previewPdf'])
     ->name('rps.preview-pdf')
